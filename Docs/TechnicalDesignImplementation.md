@@ -76,7 +76,9 @@ The folder and assembly structure is stable, and both test modes can run before 
 ### Create
 
 - [ ] Create `UnitFaction` with Player, Ally, and Enemy values.
+- [ ] Create `AttackDeliveryType` with Melee, Projectile, Grenade, and Hitscan values.
 - [ ] Create the stable unit, attack, pool, and per-spawn identity types required by the technical design.
+- [ ] Define `AttackKey` as the composite of source spawn ID and the source-spawn-local attack sequence ID.
 - [ ] Create result and reason types for interactions, damage, pooling, and spawning.
 - [ ] Create immutable `DamagePayload`, `HitContext`, `DamageResult`, and `InteractionResult` value types.
 - [ ] Create `FactionRules` as the only faction-hostility rule implementation.
@@ -90,7 +92,7 @@ The folder and assembly structure is stable, and both test modes can run before 
 - [ ] Test health initialization, damage, healing, clamping, overkill, death once, and reset.
 - [ ] Test previous and next weapon wrapping.
 - [ ] Test Stunner cadence, rejected hits, misses, and reset.
-- [ ] Test equality and uniqueness behavior for IDs used in duplicate-hit protection.
+- [ ] Test equality and uniqueness behavior for `AttackKey` and the IDs used in duplicate-hit protection, including sequence-number reuse under a different source spawn ID.
 
 ### Exit check
 
@@ -102,11 +104,14 @@ Create the ScriptableObject classes in this step, but do not build all concrete 
 
 ### Create
 
-- [ ] Create `UnitDefinition`.
+- [ ] Create the abstract common `UnitDefinition`.
+- [ ] Create `PlayerUnitDefinition` with no chase or AI fields.
+- [ ] Create `AIUnitDefinition` with positive chase range and a required default attack.
 - [ ] Create `AttackDefinition`.
 - [ ] Create `WeaponDefinition`.
 - [ ] Create `ProjectileDefinition`.
 - [ ] Create `PoolCatalog` and its pool-entry data type.
+- [ ] Add separate prewarm, maximum inactive retained, capacity policy, and optional hard active-limit fields to each pool entry.
 - [ ] Create `UnitCatalog` and its unit-entry data type.
 - [ ] Create `SandboxSpawnConfiguration`.
 - [ ] Add `OnValidate` checks that do not require prefab inspection.
@@ -116,9 +121,12 @@ Create the ScriptableObject classes in this step, but do not build all concrete 
 
 - [ ] Test duplicate unit IDs and pool IDs.
 - [ ] Test missing required references.
-- [ ] Test zero or negative health, damage, range, speed, lifetime, and pool sizes.
-- [ ] Test AI attack range greater than chase range.
+- [ ] Test contextual numeric validation: required values must be positive, while optional timing, gravity, radius, and prewarm values may be zero but not negative.
+- [ ] Test that prewarm does not exceed maximum inactive retained count and that HardActiveLimit has a positive active limit.
+- [ ] Test that Player definitions have Player faction and expose no chase data.
+- [ ] Test that AI definitions use Ally or Enemy faction, have positive chase range, and reject attack range greater than chase range.
 - [ ] Test projectile attacks without projectile definitions.
+- [ ] Test missing or incompatible `AttackDeliveryType` configuration.
 
 ### Exit check
 
@@ -130,15 +138,16 @@ Implement the shared unit state before interaction, attacks, AI, Player input, o
 
 ### Create in this order
 
-- [ ] Create `UnitController` for definition, faction, spawn identity, active state, and cached component references.
-- [ ] Cache and validate only the core sibling components implemented in this step; do not create temporary targeting or attack component placeholders.
+- [ ] Create `UnitController` for definition, faction, spawn identity, active state, required common references, and optional branch capability references.
+- [ ] Implement the prefab-capability requirement matrix from `TechnicalDesign.md`. Cache and validate only the core sibling components implemented in this step; do not create temporary targeting or attack component placeholders.
 - [ ] Create `HealthController` as the Unity adapter around `HealthState`.
 - [ ] Create `StatusEffectController` with the stun state and action-block properties.
 - [ ] Create `DamageController` as the target-side damage entry point.
 - [ ] Create `UnitLifecycleController` for inactive, active, dying, and pool-return transitions.
 - [ ] Define `IUnitMotor` so Player and AI movement implementations share the same stop, resume, move, and facing boundary.
-- [ ] Define the pool and spawn lifecycle interfaces needed by these components without depending on a concrete `PoolManager` yet.
+- [ ] Define `IPoolable` and the activation-independent, activation-dependent, and return lifecycle callbacks needed by these components without depending on a concrete `PoolManager` yet.
 - [ ] Add health, damage, death, status, spawn, and despawn events.
+- [ ] Separate permanent sibling subscriptions from per-spawn subscriptions; pool reset must remove only the latter and must never clear event delegates indiscriminately.
 - [ ] Ensure external code can read state through properties but cannot mutate health or lifecycle fields directly.
 
 ### Test now
@@ -149,6 +158,7 @@ Implement the shared unit state before interaction, attacks, AI, Player input, o
 - [ ] Verify dead units reject later damage and status effects.
 - [ ] Verify stun blocks move and attack permissions, refreshes correctly, and expires.
 - [ ] Verify spawn reset restores health, alive state, timers, and event state.
+- [ ] Verify pooling preserves permanent sibling event wiring while removing subscriptions owned by the previous spawn.
 
 ### Exit check
 
@@ -162,7 +172,9 @@ A programmatically created unit can initialize, take damage, become stunned, die
 - [ ] Register units only when their current spawn becomes logically active.
 - [ ] Remove units from the registry before they become targetable as another pooled spawn.
 - [ ] Create `DamageTargetProxy` for hurtbox colliders.
-- [ ] Create `InteractionSystem` faction, self-hit, active-state, alive-state, and duplicate-hit validation.
+- [ ] Create `InteractionSystem` faction, self-hit, target-active, target-alive, and duplicate-hit validation.
+- [ ] At impact, validate target activity but use only the captured source spawn ID and faction; do not require the source to remain active or registered.
+- [ ] Create reusable `AttackHitLedger` storage owned by each delivery and passed to `InteractionSystem`; do not retain completed attack history in a scene-level collection.
 - [ ] Add reusable non-allocating target and area query buffers.
 - [ ] Add deterministic nearest-target tie handling using spawn IDs.
 - [ ] Return a specific `InteractionResult` for every rejection and accepted hit.
@@ -174,6 +186,8 @@ A programmatically created unit can initialize, take damage, become stunned, die
 - [ ] Verify every friendly or same-faction interaction is rejected.
 - [ ] Verify self-hits and duplicate hits from one attack sequence are rejected.
 - [ ] Verify a later attack sequence can hit the same target again.
+- [ ] Verify the same sequence number under a different source spawn ID is a different `AttackKey`.
+- [ ] Verify an in-flight-style captured payload remains valid after its source unregisters.
 - [ ] Verify dead, dying, inactive, and pooled units cannot be targeted.
 - [ ] Verify units register and unregister exactly once per spawn.
 
@@ -185,13 +199,14 @@ Two stationary test units can resolve legal and illegal hits through `Interactio
 
 ### Create in this order
 
-- [ ] Create `IPoolable` and `PooledEntity`.
+- [ ] Create `PooledEntity` as the aggregator for the existing `IPoolable` lifecycle contract.
 - [ ] Create the internal pool wrapper around Unity `ObjectPool<T>`.
 - [ ] Create `PoolManager` initialization and pool lookup by stable pool ID.
 - [ ] Implement prewarming while instances remain inactive.
-- [ ] Implement the exact spawn and return order from `TechnicalDesign.md`.
+- [ ] Implement Expandable and HardActiveLimit capacity policies. Treat Unity `ObjectPool<T>.maxSize` only as the maximum inactive retained count.
+- [ ] Implement the exact two-phase spawn and return order from `TechnicalDesign.md`.
 - [ ] Implement collection checks for Editor and Development builds.
-- [ ] Add created, active, inactive, peak-active, and failed-rent diagnostics.
+- [ ] Add created, active, inactive, peak-active, failed-rent, capacity-reached, and overflow-destroy diagnostics.
 - [ ] Add a controlled response for missing pool IDs and invalid pooled prefabs.
 - [ ] Keep the pool reset contract generic. Each unit, Rigidbody, NavMesh, particle, and trail component added later owns its own reset implementation; `PoolManager` must not search for concrete component types.
 
@@ -200,10 +215,12 @@ Two stationary test units can resolve legal and illegal hits through `Interactio
 - [ ] Use a programmatically created or test-only pooled fixture; do not create the production unit hierarchy yet.
 - [ ] Verify prewarm counts.
 - [ ] Verify rent, activate, return, and reuse order.
+- [ ] Verify activation-dependent setup runs after GameObject activation but before logical activation and registration.
 - [ ] Verify a returned object is inactive.
 - [ ] Verify the same object can be reused with a new spawn ID and clean state.
 - [ ] Verify double-return and unknown-pool errors are detected.
-- [ ] Verify maximum retained count behavior.
+- [ ] Verify maximum inactive retained behavior and overflow destruction.
+- [ ] Verify Expandable pools grow without a failed rent and HardActiveLimit pools return `CapacityReached` at their active limit.
 
 ### Exit check
 
@@ -217,9 +234,11 @@ Pool reuse is proven independently of final unit and projectile prefabs.
 - [ ] Create `SpawnManager` using `PoolManager`; it must not instantiate an unpooled fallback.
 - [ ] Assign a new spawn ID for every unit spawn.
 - [ ] Apply pose and spawn context before activation.
-- [ ] Register units only after initialization succeeds.
+- [ ] Run activation-independent reset while inactive, activate the GameObject, then run activation-dependent setup.
+- [ ] Register units and start projectiles only after both initialization phases succeed.
+- [ ] Return a partially activated object without logical registration if activation-dependent setup fails.
 - [ ] Create `SpawnPointGroup` with deterministic and round-robin selection.
-- [ ] Add NavMesh position validation as an optional path used later by AI units.
+- [ ] Add NavMesh position validation as an optional path used later by AI units; final `NavMeshAgent.Warp` and on-NavMesh verification belong to the post-activation phase.
 - [ ] Define the `InitialSandboxSpawner`, `DebugUnitSpawner`, and death-spawn entry points, but defer their UI and concrete-unit wiring.
 
 ### Test now
@@ -227,6 +246,7 @@ Pool reuse is proven independently of final unit and projectile prefabs.
 - [ ] Verify a spawn request selects the expected pool.
 - [ ] Verify an invalid pool or definition returns a clear failure.
 - [ ] Verify position, rotation, definition, faction, and spawn ID are assigned before activation.
+- [ ] Verify no gameplay component acts between GameObject activation and logical activation.
 - [ ] Verify unit registry counts change on spawn and return.
 - [ ] Verify round-robin spawn points are deterministic.
 - [ ] Verify a returned instance receives a different spawn ID when spawned again.
@@ -242,9 +262,13 @@ Tests can request, observe, return, and respawn a generic unit through `SpawnMan
 - [ ] Create `TargetingController` using `InteractionSystem` target-query rules.
 - [ ] Implement current-target validation, nearest-target acquisition, target loss, and target events.
 - [ ] Support AI chase-range queries and Player attack-range-only queries.
+- [ ] Implement one shared squared XZ-plane `CombatRangeRules` function and use it for acquisition, retention, AI transitions, stopping distance, and impact checks.
+- [ ] Deduplicate target-query candidates by target spawn ID before nearest-target selection.
 - [ ] Stagger full target scans and use cheap current-target checks between scans.
 - [ ] Define `IAttackExecutor`.
-- [ ] Create `AttackController` with cooldown, windup, impact, recovery, cancellation, and sequence IDs.
+- [ ] Create explicit `AttackDeliveryType` executor bindings. Fixed AI units resolve one executor; the Player can resolve Projectile, Grenade, and Hitscan without replacing its `AttackController`.
+- [ ] Create `AttackController` with start-to-start cooldown, windup, impact, recovery, cancellation, composite `AttackKey`, and a reusable attack ledger.
+- [ ] On cancellation, clear the active ledger, apply no impact, and keep the committed cooldown unless death or pool return resets all timing.
 - [ ] Create `AttackAnimationEventRelay` so placeholder timing and later animation events call the same impact method.
 - [ ] Feed successful interaction results back to attack policies.
 - [ ] Update `UnitController` component caching and validation to include the completed targeting and attack components.
@@ -254,6 +278,8 @@ Tests can request, observe, return, and respawn a generic unit through `SpawnMan
 - [ ] Verify nearest hostile target selection.
 - [ ] Verify dead, inactive, friendly, and out-of-range candidates are ignored.
 - [ ] Verify deterministic selection at equal distance.
+- [ ] Verify multiple hurtboxes from one unit produce one logical target candidate.
+- [ ] Verify every range boundary uses root-position XZ distance rather than collider or 3D distance.
 - [ ] Verify Player targeting never requests movement.
 - [ ] Verify one attack sequence creates only one impact per target.
 - [ ] Verify cooldown and cancellation on stun, target loss, death, and despawn.
@@ -279,13 +305,16 @@ Create each delivery type separately and route all of them through `InteractionS
 - [ ] Add a pooled laser-beam presentation placeholder.
 - [ ] Add projectile lifetime expiry and pool return.
 - [ ] Add per-explosion target deduplication for multiple hurtboxes.
+- [ ] Implement the documented collision policies: source/friendly/inactive/dead targets are ignored, World blocks bullet/fireball/hitscan, and valid hostile hits consume bullet/fireball.
+- [ ] Ensure grenade source and friendly trigger contacts do not detonate it; World collision, hostile contact, or fuse expiry does.
+- [ ] Use explicit layer masks and trigger-query settings rather than project defaults.
 
 ### Create the first concrete non-unit assets
 
 - [ ] Create bullet, fireball, grenade, and laser-beam placeholder prefabs only after their scripts compile.
-- [ ] Create their `ProjectileDefinition` assets.
-- [ ] Add their pool entries and prewarm values.
-- [ ] Create initial attack definitions for melee, bullet, fireball, grenade, and hitscan tests.
+- [ ] Create their `ProjectileDefinition` assets using the temporary sandbox tuning table.
+- [ ] Add their Expandable pool entries using the documented prewarm and maximum inactive retained baselines.
+- [ ] Create initial attack definitions for melee, bullet, fireball, grenade, and hitscan tests using the temporary sandbox tuning table.
 
 ### Test now
 
@@ -293,6 +322,9 @@ Create each delivery type separately and route all of them through `InteractionS
 - [ ] Verify bullet and fireball hit or expire and return to their pools.
 - [ ] Verify grenade area damage applies once per unit even with multiple hurtboxes.
 - [ ] Verify SpaceGun hits only the intended first valid target.
+- [ ] Verify World obstruction blocks bullet, fireball, and hitscan delivery.
+- [ ] Verify projectiles ignore their source even when spawned overlapping its hurtbox.
+- [ ] Verify friendly hurtboxes neither take damage nor consume bullet/fireball/hitscan delivery.
 - [ ] Verify projectiles use the payload captured at fire time.
 - [ ] Verify a projectile from a dead or recycled source cannot read the source's new state.
 - [ ] Verify friendly fire is rejected for every delivery type.
@@ -318,7 +350,7 @@ This is the first step that creates production unit prefab structure. All requir
 - [ ] Add the `Hurtbox` child on the `UnitTarget` layer with its trigger collider and `DamageTargetProxy`.
 - [ ] Add `VisualRoot`, `Sockets`, `UIAnchor`, and Editor-only debug roots.
 - [ ] Add AttackOrigin, WeaponSocket, RightHandSocket, and MouthSocket transforms.
-- [ ] Validate required components and child references.
+- [ ] Validate required components and child references according to the documented capability matrix; the base asset does not require a motor or concrete executor.
 
 ### Create the minimum `CombatSandbox` scene
 
@@ -328,7 +360,7 @@ This is the first step that creates production unit prefab structure. All requir
 - [ ] Add and bake a `NavMeshSurface` even though AI is implemented later.
 - [ ] Add `PoolManager`, `SpawnManager`, `InteractionSystem`, `UnitRegistry`, and `CombatSandboxBootstrap` scene objects.
 - [ ] Add Player, Ally, and Enemy spawn-point groups.
-- [ ] Create a test-only stationary unit variant for sandbox verification; do not use it as a gameplay prefab.
+- [ ] Create a test-only stationary unit variant with an explicitly non-attacking `AttackController`; do not use it as a gameplay prefab.
 - [ ] Add required pool and unit catalog entries for the test fixture.
 
 ### Verify
@@ -359,7 +391,8 @@ The scene starts cleanly, the common prefab is stable, and the full health-to-po
 
 - [ ] Create `PlayerWeaponController` and ordered Pistol, GrenadeGun, and SpaceGun cycling.
 - [ ] Create the Player auto-target and auto-attack behavior.
-- [ ] Create weapon definition assets for all three weapons.
+- [ ] Bind Projectile, Grenade, and Hitscan executors once and select them through each weapon attack's `AttackDeliveryType`.
+- [ ] Create weapon definition assets for all three weapons using the temporary sandbox tuning table.
 - [ ] Create placeholder nested weapon visual prefabs.
 - [ ] Connect each weapon to the already tested projectile, grenade, or hitscan delivery path.
 
@@ -368,7 +401,7 @@ The scene starts cleanly, the common prefab is stable, and the full health-to-po
 - [ ] Create `PF_Unit_Player_Base` as a variant of `PF_Unit_Base`.
 - [ ] Add `CharacterController`, Player input, Player motor, Player weapon, and Player combat components.
 - [ ] Create `PF_Player` as the concrete Player variant.
-- [ ] Create the Player `UnitDefinition`.
+- [ ] Create the Player `PlayerUnitDefinition`; it must contain no chase or AI configuration.
 - [ ] Add the Player prefab and definition to pool and unit catalogs.
 - [ ] Configure `InitialSandboxSpawner` to spawn the Player on Play.
 - [ ] Bind the camera and minimum health/weapon HUD to the spawned Player.
@@ -377,6 +410,7 @@ The scene starts cleanly, the common prefab is stable, and the full health-to-po
 
 - [ ] Test weapon-cycle wrap in both directions through the Input System.
 - [ ] Test that each weapon updates target range and attack definition.
+- [ ] Test that every Player weapon selects exactly one compatible executor without adding or replacing runtime components.
 - [ ] Test that Player targeting does not chase.
 - [ ] Manually verify keyboard and on-screen stick movement.
 - [ ] Manually verify Pistol, GrenadeGun, and SpaceGun against stationary Enemy test targets.
@@ -396,7 +430,7 @@ Pressing Play immediately creates a controllable Player that can switch and use 
 - [ ] Implement chase-range and attack-range transitions.
 - [ ] Limit destination refresh frequency and skip insignificant target movement.
 - [ ] Reset paths on attack, stun, death, and pool return.
-- [ ] Use `NavMeshAgent.Warp` during spawn positioning.
+- [ ] Use `NavMeshAgent.Warp` during activation-dependent spawn setup, after GameObject activation and before logical activation.
 - [ ] Vary avoidance priority using spawn ID.
 
 ### Create prefab branches
@@ -406,6 +440,7 @@ Pressing Play immediately creates a controllable Player that can switch and use 
 - [ ] Create `PF_Unit_Ally_Base` as a variant of `PF_Unit_AI_Base`.
 - [ ] Create `PF_Unit_Enemy_Base` as a variant of `PF_Unit_AI_Base`.
 - [ ] Configure only faction defaults and debug presentation on faction bases; keep balance values in definitions.
+- [ ] Accept only `AIUnitDefinition` on AI branches and validate that its Ally or Enemy faction matches the faction base.
 
 ### Create one thin test pair
 
@@ -433,10 +468,10 @@ Build one combat family at a time. Complete the repeated content checklist for e
 ### Repeated content checklist
 
 - [ ] Create or reuse the nested visual prefab.
-- [ ] Create the `UnitDefinition`.
+- [ ] Create the `AIUnitDefinition` using the temporary sandbox tuning table.
 - [ ] Create the concrete prefab variant from the correct faction base.
 - [ ] Assign the correct attack executor, definition, model, collider size, and socket.
-- [ ] Add the prefab to `PoolCatalog` with an initial prewarm value.
+- [ ] Add the prefab to `PoolCatalog` using the temporary Expandable policy, prewarm, and maximum inactive retained baselines.
 - [ ] Add the unit to `UnitCatalog`.
 - [ ] Add one direct sandbox spawn path for immediate manual testing.
 - [ ] Spawn, fight, die, return, and respawn the unit before moving on.
@@ -469,7 +504,7 @@ All non-special Ally and Enemy kinds can be spawned and fight with the correct r
 - [ ] Add stun payload creation only for the next required successful hit.
 - [ ] Advance the counter only after an Applied interaction result.
 - [ ] Create the hammer nested visual and configure RightHandSocket.
-- [ ] Create the Stunner unit and attack definitions.
+- [ ] Create the Stunner `AIUnitDefinition` and attack definition using the temporary sandbox tuning values.
 - [ ] Create `PF_Enemy_Stunner` from `PF_Unit_Enemy_Base`.
 - [ ] Add pool, unit catalog, and sandbox spawn entries.
 - [ ] Test hits 1, 4, 7, misses, rejected hits, death, and pool reset.
@@ -477,11 +512,12 @@ All non-special Ally and Enemy kinds can be spawned and fight with the correct r
 ### Create MiniDivisible before Divisible
 
 - [ ] Create the shared Divisible visual prefab.
-- [ ] Create the MiniDivisible unit and melee attack definitions.
+- [ ] Create the MiniDivisible `AIUnitDefinition` and melee attack definition using the temporary sandbox tuning values.
 - [ ] Create `PF_Enemy_MiniDivisible` directly from `PF_Unit_Enemy_Base`.
 - [ ] Apply the smaller scale and collider values.
 - [ ] Confirm it has no divide-on-death component.
 - [ ] Add its pool and unit catalog entries.
+- [ ] Configure its gameplay pool as Expandable with capacity for every three-child death request.
 - [ ] Test MiniDivisible as a normal independent Enemy before using it as a death spawn.
 
 ### Create Divisible last
@@ -489,7 +525,7 @@ All non-special Ally and Enemy kinds can be spawned and fight with the correct r
 - [ ] Create `SpawnUnitsOnDeath`.
 - [ ] Create and test the three radial spawn-position calculation.
 - [ ] Add NavMesh sampling and a clear failed-position result.
-- [ ] Create the Divisible unit and melee attack definitions.
+- [ ] Create the Divisible `AIUnitDefinition` and melee attack definition using the temporary sandbox tuning values.
 - [ ] Create `PF_Enemy_Divisible` from `PF_Unit_Enemy_Base`.
 - [ ] Add `SpawnUnitsOnDeath` pointing to MiniDivisible.
 - [ ] Add its pool, unit catalog, and sandbox spawn entries.
@@ -506,14 +542,14 @@ Stunner cadence and Divisible death spawning pass Edit Mode, Play Mode, and manu
 
 - [ ] Create the separate `SandboxDebug` input action map.
 - [ ] Add F1 panel toggle.
-- [ ] Add keys 1 through 9 for all concrete units in the order documented in `TechnicalDesign.md`.
+- [ ] Add number keys 1 through 9 in the documented order and key 0 for direct MiniDivisible spawning.
 - [ ] Add Backspace to clear non-Player units and active projectiles.
 - [ ] Keep Q and E owned only by Player weapon switching.
 - [ ] Enable debug actions only in the Editor or Development builds.
 
 ### Create the sandbox panel
 
-- [ ] Add one spawn button per concrete unit.
+- [ ] Add one spawn button per concrete unit, including MiniDivisible.
 - [ ] Add Spawn 10 controls.
 - [ ] Add clear non-Player units and projectiles.
 - [ ] Add reset Player.
@@ -521,7 +557,7 @@ Stunner cadence and Divisible death spawning pass Edit Mode, Play Mode, and manu
 - [ ] Add spawn-at-cursor if it does not delay the required controls.
 - [ ] Display current Player health and weapon.
 - [ ] Display active units by faction.
-- [ ] Display active, inactive, created, and peak pool counts.
+- [ ] Display active, inactive, created, peak, failed-rent, capacity-reached, and overflow-destroy pool counts.
 - [ ] Display the last interaction result.
 
 ### Create diagnostics
@@ -555,6 +591,7 @@ Most tests already exist from earlier steps. This step closes gaps and runs the 
 - [ ] Stunner cadence
 - [ ] Target selection and deterministic ties
 - [ ] Attack-sequence duplicate protection
+- [ ] Composite `AttackKey` identity and bounded attack-ledger reuse
 - [ ] MiniDivisible spawn formation
 - [ ] Catalog and definition validation
 
@@ -562,6 +599,7 @@ Most tests already exist from earlier steps. This step closes gaps and runs the 
 
 - [ ] Ally-versus-Enemy accepted damage
 - [ ] Friendly-fire rejection for every delivery type
+- [ ] Source, friendly, inactive, dead, and World collision policies for every delivery type
 - [ ] Full AI range transition behavior
 - [ ] Stun stop and resume
 - [ ] Divisible creates exactly three MiniDivisibles
@@ -589,9 +627,9 @@ All automated tests pass and the complete manual combat checklist has no known i
 
 ### Profile in this order
 
-1. [ ] Run 10 Allies versus 10 Enemies.
-2. [ ] Run 50 Allies versus 50 Enemies.
-3. [ ] Run 100 Allies versus 100 Enemies as a diagnostic load.
+1. [ ] Prewarm the selected concrete unit and projectile pools to the requested preset counts, then run 10 Allies versus 10 Enemies.
+2. [ ] Prewarm for the preset, then run 50 Allies versus 50 Enemies.
+3. [ ] Prewarm for the preset, then run 100 Allies versus 100 Enemies as a diagnostic load.
 4. [ ] Repeat a representative load in a Development build on the intended mobile device.
 
 ### Inspect and adjust

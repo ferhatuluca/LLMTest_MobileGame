@@ -52,7 +52,7 @@ Melee units must get close to their target before attacking. Ranged units can at
 
 The Player is moved by the user with an on-screen joystick.
 
-The Player has an attack range but does not have a chase range. The Player never chases a target automatically because movement is controlled by the user. When an Enemy is inside the Player's attack range, the Player can attack it with the current weapon.
+The Player has an attack range but has no chase capability, chase component, or chase-range data. The Player never chases a target automatically because movement is controlled by the user. When an Enemy is inside the Player's attack range, the Player can attack it with the current weapon.
 
 ## Unit Kinds
 

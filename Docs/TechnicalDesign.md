@@ -44,7 +44,7 @@ Individual units still need small local behavior states such as Idle, Chase, Att
 The following decisions remove ambiguity from the first implementation:
 
 - `Monster` is treated as the presentation name for an Ally. Therefore, DoubleHead is implemented as an Ally. If Monster later becomes a separate gameplay faction, `UnitFaction` and the interaction matrix can be extended without replacing the combat pipeline.
-- The Player automatically targets and attacks the nearest valid Enemy inside the current weapon range. This matches the current joystick-only mobile design. An optional Editor-only attack button may force an attack for timing tests, but it is not required for normal play.
+- The Player automatically targets and attacks the nearest valid Enemy inside the current weapon range. This matches the current joystick-only mobile design. An optional Editor-only attack button may force an attack for timing tests, but it is not required for normal play. The Player has no chase capability and no chase-range field in its runtime data.
 - Stunner applies stun on successful damaging hits 1, 4, 7, 10, and so on. Misses, blocked interactions, and invalid targets do not advance the counter. The counter belongs to each Stunner instance and resets when the unit is taken from the pool.
 - SpaceGun is a single-target hitscan laser for the first milestone. Pistol uses a bullet projectile. GrenadeGun uses a ballistic projectile with area damage.
 - Dragon fireballs are single-target projectiles initially. Their impact can be extended to area damage through data later.
@@ -99,11 +99,11 @@ No projectile, hitbox, special unit, or AI brain is allowed to reduce health dir
 
 | Member | Purpose |
 | --- | --- |
-| `Definition` | The immutable `UnitDefinition` used for this spawn. |
+| `Definition` | The immutable concrete `UnitDefinition` subtype used for this spawn. |
 | `Faction` | `Player`, `Ally`, or `Enemy`; copied from the definition. |
 | `SpawnId` | A monotonically increasing identifier assigned on every pool spawn. |
 | `IsActive` | True only while the current spawn is a valid gameplay participant. |
-| Component references | Cached references to health, damage, status, targeting, attack, motor, and lifecycle components. |
+| Component references | Cached references to required common components and to optional capability components supplied by the concrete prefab branch. |
 
 `SpawnId` is important with pooling. A projectile can outlive its source, and a pooled GameObject can later represent a different unit. Attack payloads capture the source faction and source spawn ID at fire time rather than relying on a mutable pooled source reference.
 
@@ -121,7 +121,7 @@ The matrix is implemented once in a pure `FactionRules` class and used by `Inter
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| `UnitController` | Definition, faction, spawn identity, component references | Health math, AI decisions, attack timing |
+| `UnitController` | Definition, faction, spawn identity, common component references, available capability references | Health math, AI decisions, attack timing |
 | `HealthController` | Current and maximum health, alive/dead transition, health events | Faction checks, armor, stun, pooling |
 | `DamageController` | The incoming damage boundary, invulnerability and future resistance hooks | Target acquisition, attack cooldowns, faction rules |
 | `StatusEffectController` | Active stun and future temporary status effects | Damage delivery or health values |
@@ -131,7 +131,17 @@ The matrix is implemented once in a pure `FactionRules` class and used by `Inter
 | `IUnitMotor` implementation | Movement, rotation, stop/resume | Target choice or attack damage |
 | `AIUnitBrain` | Idle/chase/attack decisions for Ally and Enemy units | Health and interaction rules |
 
-Components cache required sibling references during `Awake`. Missing required components are reported immediately with an actionable error that names the prefab. Runtime searches such as `FindObjectOfType` are not used for service discovery.
+Component requirements depend on the prefab capability level:
+
+| Prefab or fixture | Required capabilities |
+| --- | --- |
+| `PF_Unit_Base` | Unit, health, damage, status, targeting, attack timing, lifecycle, pooling, and hurtbox components. A motor and concrete executor are not required on the base asset itself. |
+| Stationary test fixture | The common base components. Its `AttackController` may be explicitly configured as non-attacking, in which case no executor is required. |
+| `PF_Unit_Player_Base` | Common base components, `CharacterController`, Player input and motor, weapon controller, and Projectile, Grenade, and Hitscan executor bindings. It has no AI brain or chase data. |
+| `PF_Unit_AI_Base` | Common base components, `NavMeshAgent`, NavMesh motor, and AI brain. A concrete spawnable AI variant must resolve exactly one executor compatible with its default attack definition. |
+| Concrete attacking unit | Every capability required by its branch plus all sockets and the executor selected by its attack or weapon definitions. |
+
+Components cache their required sibling references during `Awake`. Capability references that are not required at that prefab level may be absent, but concrete-prefab validation must reject a missing required capability before Play Mode. Permanent sibling event subscriptions are created once and removed only on destruction; per-spawn subscriptions are removed during pool return. Reset code must not clear event delegates indiscriminately. Runtime searches such as `FindObjectOfType` are not used for service discovery.
 
 ## 5. Health and Damage
 
@@ -177,10 +187,12 @@ Attack delivery uses immutable per-attack data rather than passing an attacker G
 `DamagePayload` contains:
 
 - Source spawn ID and source faction
-- Attack sequence ID
+- Attack sequence ID, which is local to that source spawn
 - Base damage
 - Optional status-effect payloads
 - Damage category for future resistance or presentation
+
+`AttackKey` is the composite of source spawn ID and attack sequence ID. A sequence number may restart when a unit is spawned again because the new source spawn ID still makes the composite key unique.
 
 `HitContext` adds target-specific information:
 
@@ -188,6 +200,8 @@ Attack delivery uses immutable per-attack data rather than passing an attacker G
 - Hit position and normal
 - Direct-hit or area-hit flag
 - Projectile or executor identifier for diagnostics
+
+The immutable `HitContext` is passed to `InteractionSystem` together with a reusable mutable `AttackHitLedger` owned by the current attack delivery. The ledger is not stored inside `DamagePayload` or `HitContext`.
 
 `DamageResult` and `InteractionResult` return explicit outcomes such as Applied, InvalidFaction, SourceEqualsTarget, TargetInactive, TargetDead, Invulnerable, or AlreadyHit. This supports tests and prevents silent failures.
 
@@ -200,10 +214,21 @@ Attack delivery uses immutable per-attack data rather than passing an attacker G
 - Determine whether two factions are hostile.
 - Reject self-hits by comparing the source spawn ID with the target spawn ID.
 - Reject inactive, dying, pooled, or already-dead targets.
-- Prevent the same area attack or melee impact from hitting one target more than once for the same attack sequence.
+- Prevent the same area attack or melee impact from hitting one target more than once for the same `AttackKey` by consulting the supplied `AttackHitLedger`.
 - Forward an accepted `HitContext` to the target `DamageController`.
 - Return a detailed result to the attack executor.
 - Publish a diagnostic combat event for the sandbox HUD and automated integration tests.
+
+Source activity is checked when an attack begins or a projectile is fired. At impact time, `InteractionSystem` uses the source faction and source spawn ID captured in `DamagePayload`; it does not require the source GameObject to remain active or registered. This is required so an in-flight projectile remains valid after its shooter dies, despawns, or is reused. Melee executors still cancel their impact if the attacker becomes inactive before the impact frame.
+
+Duplicate-hit history is not stored in an unbounded scene-level collection. Each attack delivery owns a reusable `AttackHitLedger` containing target spawn IDs already accepted for its current `AttackKey`:
+
+- `AttackController` clears and reuses its ledger when starting a melee sequence.
+- Each projectile or grenade owns a ledger and clears it on pool take and pool return.
+- Hitscan clears and reuses a ledger for each shot.
+- `InteractionSystem` checks and records the target in the supplied ledger when dispatching an accepted hit.
+
+The ledger remains valid until that delivery finishes, ensuring duplicate animation events or multiple hurtboxes cannot apply damage twice without retaining completed attack history.
 
 ### 6.2 Target queries
 
@@ -212,11 +237,14 @@ Attack delivery uses immutable per-attack data rather than passing an attacker G
 - Query only the `UnitTarget` physics layer using `Physics.OverlapSphereNonAlloc` or the non-allocating equivalent available in the selected Unity version.
 - A `DamageTargetProxy` on each hurtbox caches the owning `UnitController` and `DamageController`; collision code does not call repeated parent searches.
 - Filter candidates through `FactionRules` and active/alive state.
-- Choose nearest candidates using squared distance.
+- Deduplicate candidates by current target spawn ID before selection so multiple hurtboxes do not bias selection or consume multiple logical candidate slots.
+- Choose nearest candidates using the common planar range rule below.
 - Resolve equal-distance ties by `SpawnId` so tests are deterministic.
 - Maintain a reusable buffer and record a warning in the debug HUD if the buffer fills. Increase or partition the buffer rather than allocating a new array during each query.
 
 AI target scans are staggered across frames. A unit verifies its current target cheaply each frame but performs a full reacquisition at a configurable interval, initially around 0.2 to 0.3 seconds. The exact interval is a balance and profiling value, not a rule embedded in code.
+
+All chase and attack ranges use squared XZ-plane distance between unit root positions. The sandbox is a single NavMesh level, so vertical separation is not part of the first milestone's range model. Physics overlap queries provide broad-phase candidates, then the shared `CombatRangeRules` function performs the authoritative XZ range check. Target acquisition, target retention, AI state transitions, stopping distance, melee impact checks, and range-boundary tests must use this same function. Concrete attack ranges must account for the configured NavMesh agent and body radii because range is not measured from collider surfaces.
 
 ### 6.3 Physics layers
 
@@ -231,11 +259,25 @@ Create these layers:
 
 Faction-specific physics layers are unnecessary for the first milestone. The faction matrix remains authoritative and is easier to test than the Unity collision matrix.
 
+Collision behavior is fixed for the milestone:
+
+| Delivery or collider | Required behavior |
+| --- | --- |
+| Unit target queries | Query `UnitTarget` triggers, deduplicate by target spawn ID, then apply faction, state, and planar-range filters. |
+| Bullet and fireball | Sweep against `World` and `UnitTarget`. Ignore the captured source spawn, friendly targets, inactive targets, and dead targets without consuming the projectile. A valid hostile hit applies once and returns the projectile. `World` blocks and returns the projectile. |
+| Grenade | Its Rigidbody collides with `World`; hostile target trigger contact or fuse expiry may also detonate it. Source, friendly, inactive, and dead target triggers do not detonate it. One explosion ledger deduplicates all hurtboxes. |
+| Hitscan | Cast from the current muzzle through `World` and `UnitTarget`. Ignore source, friendly, inactive, and dead target colliders; stop at the first valid hostile target or the first nearer `World` obstruction. Apply to at most one target. |
+| Melee | Does not depend on collider contact. It uses the selected target and rechecks the common planar attack range at impact. |
+
+Every projectile snapshots the source spawn ID and starts its sweep from the configured muzzle or attack origin. Self-collision is ignored by identity even if the projectile initially overlaps the shooter's hurtbox. Layer masks and `QueryTriggerInteraction` values are explicit serialized or constant configuration; they must not rely on project-wide default query settings.
+
 ## 7. Attack System
 
 ### 7.1 AttackController
 
-Every attacking unit has one `AttackController`. It reads an `AttackDefinition` and delegates delivery to one component implementing `IAttackExecutor`.
+Every attacking unit has one `AttackController`. Each `AttackDefinition` declares an `AttackDeliveryType`: Melee, Projectile, Grenade, or Hitscan. The controller resolves that type through explicit executor bindings to components implementing `IAttackExecutor`.
+
+Fixed AI units bind only the executor required by their default attack. The Player binds Projectile, Grenade, and Hitscan executors once on `PF_Unit_Player_Base`. When `PlayerWeaponController` changes the active `WeaponDefinition`, it updates the attack definition; `AttackController` then selects the matching bound executor. Missing, duplicate, or incompatible executor bindings are validation errors. The controller never selects an executor through GameObject names or a scene search.
 
 The controller owns:
 
@@ -244,6 +286,8 @@ The controller owns:
 - Cancellation when the attacker is stunned, dying, despawned, or loses a required target
 - Facing the intended target before impact where applicable
 - Sending successful-hit feedback to special hit policies such as Stunner cadence
+
+Cooldown is measured from attack start to the earliest allowed next attack start. Recovery blocks a new attack after impact, so another attack may begin only when both cooldown and recovery have completed. Starting windup commits the cooldown. Cancellation before impact deals no damage, clears the active ledger, and leaves the committed cooldown running; death or pool return resets all timing state.
 
 Damage happens at the impact point, not when the animation begins. For production animation, `AttackAnimationEventRelay` calls the impact method from an animation event. Placeholder units use the same method from a configured windup timer, allowing systems to be tested before animation exists.
 
@@ -350,7 +394,7 @@ The attack range must be less than or equal to chase range for AI definitions. A
 - Destinations are refreshed at a limited frequency or after the target moves a meaningful distance, not every frame.
 - `stoppingDistance` is derived from effective attack range with a small tolerance.
 - `ResetPath` is called when attacking, stunned, dying, or returning to the pool.
-- A pooled agent is positioned with `NavMeshAgent.Warp` after a valid NavMesh point is chosen.
+- A pooled agent is positioned with `NavMeshAgent.Warp` during activation-dependent spawn setup, after GameObject activation and before logical activation, once a valid NavMesh point is chosen.
 - Obstacle avoidance priority is varied by spawn ID to reduce identical-agent deadlocks.
 
 ### 8.4 Player movement
@@ -375,11 +419,15 @@ The camera uses a simple `CameraFollowController` with a fixed top-down offset. 
 
 - Stable `PoolId`
 - Prefab reference
-- Initial prewarm count
-- Maximum retained count
+- Initial prewarm count, which may be zero
+- Maximum inactive retained count
+- `PoolCapacityPolicy`: Expandable or HardActiveLimit
+- Maximum active count when the HardActiveLimit policy is selected
 - Collection-check setting for Editor and Development builds
 
-At bootstrap, `PoolManager` validates unique IDs and required `PooledEntity` components, constructs the pools, and prewarms them. Prewarming creates inactive instances before the first combat interaction.
+Unity `ObjectPool<T>.maxSize` controls how many inactive instances are retained; it is not treated as an active-rent limit. Under Expandable policy, the wrapper may create additional instances when no inactive instance is available. Under HardActiveLimit policy, it returns a `CapacityReached` failure before calling `Get` once the configured active count is reached. A release that exceeds the maximum inactive retained count may destroy the overflow instance through the Unity pool's destroy callback and increments an overflow-destroy diagnostic.
+
+At bootstrap, `PoolManager` validates unique IDs, required `PooledEntity` components, non-negative prewarm counts, prewarm not exceeding maximum inactive retained count, positive retained counts, and valid hard limits. It then constructs and prewarms the pools. Prewarming creates inactive instances before the first combat interaction. Gameplay pools use Expandable policy for this milestone; in particular, the MiniDivisible pool must allow three children per Divisible death. HardActiveLimit remains covered as an explicit testable policy for future constrained effects.
 
 ### 9.2 Pool contract
 
@@ -388,10 +436,13 @@ Every pooled root implements `IPoolable` through `PooledEntity` and any interest
 Spawn order:
 
 1. Rent an inactive object from the correct pool.
-2. Assign pose and spawn context while inactive.
-3. Reset all runtime components through the pool-spawn contract.
+2. Assign the requested transform pose and spawn context while inactive.
+3. Reset all activation-independent runtime components through the pool-spawn contract.
 4. Activate the GameObject.
-5. Register an active unit with `UnitRegistry` or start projectile movement.
+5. Run the activation-dependent spawn phase. AI units call `NavMeshAgent.Warp` and confirm that the agent is on the NavMesh here; projectiles initialize any APIs that require active components here.
+6. If activation-dependent setup succeeds, mark the spawn logically active and register it with `UnitRegistry` or start projectile movement.
+
+If activation-dependent setup fails, the object is returned without becoming a logical gameplay participant and `SpawnManager` reports the specific failure. No target query, AI decision, input, attack, or projectile movement may run between GameObject activation and successful logical activation.
 
 Return order:
 
@@ -421,7 +472,7 @@ Each pooled unit must reset:
 - TrailRenderer and ParticleSystem state
 - External event subscriptions created for the previous spawn
 
-The pool diagnostics expose created, inactive, active, peak-active, and failed-rent counts per pool. This is visible in the sandbox panel and makes undersized prewarm values obvious.
+The pool diagnostics expose created, inactive, active, peak-active, failed-rent, capacity-reached, and overflow-destroy counts per pool. Failed rent includes unknown pool IDs, creation/initialization failures, and hard active-capacity failures; ordinary expansion under Expandable policy is not a failed rent. This is visible in the sandbox panel and makes undersized prewarm and retention values obvious.
 
 ## 10. Spawning
 
@@ -436,7 +487,7 @@ A `UnitSpawnRequest` contains:
 - Optional source spawn ID, used by Divisible diagnostics
 - Spawn reason: Initial, Debug, DeathEffect, or future Gameplay
 
-The service resolves the pool, validates or samples the location, assigns a new `SpawnId`, initializes the instance, and returns a typed result. It reports a failure instead of silently instantiating an unpooled fallback.
+The service resolves the pool, validates or samples the location, assigns a new `SpawnId`, performs both spawn phases, and returns a typed result. AI NavMesh validation occurs before rent where possible, while `NavMeshAgent.Warp` and the final on-NavMesh check occur after GameObject activation but before logical activation. It reports a failure instead of silently instantiating an unpooled fallback.
 
 ### 10.2 Concrete spawners
 
@@ -467,10 +518,11 @@ Default shortcuts:
 | 7 | Spawn Ally Classic Range |
 | 8 | Spawn Ally Dragon |
 | 9 | Spawn Ally DoubleHead |
+| 0 | Spawn Enemy MiniDivisible |
 | Backspace | Return all non-Player units and active projectiles to their pools |
 | Q / E | Previous / next Player weapon |
 
-The panel includes one button per concrete unit, Spawn 10 variants for load testing, clear non-Player units, reset Player, pause AI decisions, draw ranges, and show pool counts. Debug keys live in a separate `SandboxDebug` input action map and the debug panel is enabled only in the Editor or Development builds.
+The panel includes one button per concrete unit, including MiniDivisible, plus Spawn 10 variants for load testing, clear non-Player units, reset Player, pause AI decisions, draw ranges, and show pool counts. Debug keys live in a separate `SandboxDebug` input action map and the debug panel is enabled only in the Editor or Development builds.
 
 Enemy and Ally keyboard spawns use separate named `SpawnPointGroup` objects so results are repeatable. The panel may additionally offer Spawn At Cursor by raycasting from the camera onto the World layer.
 
@@ -519,33 +571,43 @@ Use separate assets for reusable configuration and keep behavior in runtime comp
 
 ### 12.1 UnitDefinition
 
-Suggested fields:
+`UnitDefinition` is the abstract common definition referenced by `UnitController`, catalogs, and spawn requests. Common fields are:
 
 - Stable unit ID and display name
 - `UnitFaction`
 - Maximum health
 - Move speed and turn speed
-- Chase range; zero for the Player
-- Default `AttackDefinition`; Player receives its current attack from the equipped weapon
-- Stun duration or effect definition when relevant
 - Concrete pool ID or spawn-catalog key
 - Optional presentation references such as health-bar style
 
 Create distinct assets for Ally and Enemy versions of shared kinds because faction, health, speed, and balance can differ.
 
-### 12.2 AttackDefinition
+### 12.2 PlayerUnitDefinition
+
+`PlayerUnitDefinition` derives from `UnitDefinition` and is valid only with the Player faction. It has no chase range, AI settings, or default AI attack. The equipped `WeaponDefinition` supplies the Player's current attack range and attack definition.
+
+### 12.3 AIUnitDefinition
+
+`AIUnitDefinition` derives from `UnitDefinition` and is valid only with the Ally or Enemy faction. It adds:
+
+- Positive chase range
+- Required default `AttackDefinition`
+
+The default attack range must be less than or equal to the chase range. Player code cannot receive an `AIUnitDefinition`, and AI components reject a non-AI definition during validation and spawn initialization.
+
+### 12.4 AttackDefinition
 
 Suggested fields:
 
 - Damage
 - Attack range
 - Cooldown, windup, and recovery durations
-- Attack executor type or compatible executor configuration
+- Required `AttackDeliveryType`
 - Projectile definition where needed
 - Animation trigger or attack presentation ID
-- Impact radius for area attacks
+- Optional accepted-hit effect configuration such as Stunner stun
 
-### 12.3 WeaponDefinition
+### 12.5 WeaponDefinition
 
 Suggested fields:
 
@@ -555,7 +617,7 @@ Suggested fields:
 - Muzzle socket name or typed socket ID
 - Optional fire and impact presentation IDs
 
-### 12.4 ProjectileDefinition
+### 12.6 ProjectileDefinition
 
 Suggested fields:
 
@@ -566,22 +628,65 @@ Suggested fields:
 - Explosion radius and fuse for grenades
 - World-collision behavior
 
-### 12.5 Catalogs and validation
+### 12.7 Catalogs and validation
 
 - `UnitCatalog`: maps stable unit IDs to definitions for the debug panel and future gameplay systems.
 - `PoolCatalog`: maps pool IDs to prefabs and capacity settings.
-- `SandboxSpawnConfiguration`: Player definition, optional initial units, and default spawn counts.
+- `SandboxSpawnConfiguration`: `PlayerUnitDefinition`, optional initial unit definitions, and default spawn counts.
 
 Custom `OnValidate` checks and an Editor validation command must report:
 
 - Duplicate IDs
 - Missing prefabs or pool entries
-- Non-positive health, damage, ranges, or lifetimes
-- AI attack range greater than chase range
+- Non-positive maximum health, required damage, required attack range, move speed, turn speed, or projectile lifetime
+- A `PlayerUnitDefinition` whose faction is not Player
+- An `AIUnitDefinition` whose faction is Player, whose chase range is not positive, or whose attack range is greater than chase range
+- Negative timing, gravity, optional radius, prewarm, or other values for which zero means disabled or not applicable
 - A projectile attack without a projectile definition
+- Missing, duplicate, or incompatible executor bindings on concrete prefabs
+- A Player prefab that cannot resolve every delivery type used by its configured weapon list
 - Prefabs missing required unit, target, or pool components
 - Divisible pointing to anything other than the MiniDivisible definition
 - MiniDivisible containing a divide-on-death component
+
+Validation is contextual. There is no Player chase value to validate. Zero is valid for non-area impact radius, non-gravity projectiles, optional windup or recovery, and an intentionally empty prewarm. Values required by a selected capability remain strictly positive.
+
+### 12.8 Temporary Combat Sandbox Tuning
+
+The following values are non-final but authoritative for the first implementation. They prevent different implementers from inventing incompatible sandbox data. Balance changes may be made later in definition assets without changing rule tests.
+
+| Unit definition | Health | Move speed | Turn speed | Chase range | Default attack |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Player | 100 | 6.0 | 720 degrees/s | Not present | Current weapon |
+| Ally / Enemy Classic Melee | 60 | 3.5 | 540 degrees/s | 12 | Basic Melee |
+| Ally / Enemy Classic Range | 50 | 3.2 | 540 degrees/s | 14 | Basic Bullet |
+| Ally / Enemy Dragon | 80 | 3.0 | 480 degrees/s | 16 | Dragon Fireball |
+| Ally DoubleHead | 110 | 3.2 | 480 degrees/s | 12 | DoubleHead Melee |
+| Enemy Stunner | 120 | 2.8 | 420 degrees/s | 12 | Stunner Melee |
+| Enemy Divisible | 100 | 2.7 | 420 degrees/s | 12 | Divisible Melee |
+| Enemy MiniDivisible | 30 | 4.0 | 600 degrees/s | 10 | MiniDivisible Melee |
+
+| Attack definition | Damage | Range | Cooldown | Windup | Recovery | Delivery / additional value |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Basic Melee | 10 | 1.8 | 1.0 s | 0.25 s | 0.25 s | Melee |
+| Basic Bullet | 8 | 8.0 | 1.2 s | 0.20 s | 0.20 s | Projectile / Bullet |
+| Dragon Fireball | 14 | 10.0 | 1.6 s | 0.40 s | 0.30 s | Projectile / Fireball |
+| DoubleHead Melee | 18 | 2.0 | 1.3 s | 0.35 s | 0.30 s | Melee |
+| Stunner Melee | 15 | 2.0 | 1.5 s | 0.45 s | 0.35 s | Melee / 2.0 s stun on cadence hits |
+| Divisible Melee | 12 | 1.9 | 1.2 s | 0.30 s | 0.25 s | Melee |
+| MiniDivisible Melee | 6 | 1.4 | 0.8 s | 0.20 s | 0.20 s | Melee |
+| Player Pistol | 10 | 10.0 | 0.5 s | 0.05 s | 0.05 s | Projectile / Bullet |
+| Player GrenadeGun | 25 | 9.0 | 1.8 s | 0.25 s | 0.30 s | Grenade / Grenade projectile |
+| Player SpaceGun | 18 | 12.0 | 1.0 s | 0.10 s | 0.15 s | Hitscan |
+
+| Projectile | Speed | Maximum lifetime or fuse | Collision radius | Additional value |
+| --- | ---: | ---: | ---: | --- |
+| Bullet | 20 | 2.0 s | 0.10 | No gravity |
+| Fireball | 12 | 3.0 s | 0.25 | No gravity |
+| Grenade | 12 launch speed | 2.0 s fuse | 0.20 | Gravity scale 1; 3.0 explosion radius |
+| Laser beam visual | Not applicable | 0.12 s | Not applicable | Presentation only |
+
+All milestone gameplay pools use Expandable policy. Initial prewarm and maximum inactive retained baselines are: Player 1/1, each regular concrete unit 10/100, MiniDivisible 30/150, Bullet 50/200, Fireball 30/100, Grenade 20/60, and laser beam visual 20/60. Stress presets explicitly prewarm to their requested unit counts before profiling; the catalog baselines do not claim to cover the 100-versus-100 diagnostic load.
 
 ## 13. Prefab Structure
 
@@ -634,11 +739,11 @@ PF_Unit_Base
 `-- DebugVisuals                    [Editor/Development only]
 ```
 
-`PF_Unit_Player_Base` adds `CharacterController`, `PlayerInputReader`, `PlayerMotor`, `PlayerWeaponController`, and Player auto-target/attack behavior.
+`PF_Unit_Player_Base` adds `CharacterController`, `PlayerInputReader`, `PlayerMotor`, `PlayerWeaponController`, Player auto-target/attack behavior, and explicit Projectile, Grenade, and Hitscan executor bindings. It contains no AI brain, NavMesh motor, or chase configuration.
 
 `PF_Unit_AI_Base` adds `NavMeshAgent`, `NavMeshUnitMotor`, and `AIUnitBrain`.
 
-Faction base variants set the expected definition type, faction-colored debug visuals, and faction presentation defaults. Concrete variants assign their `UnitDefinition`, model, attack executor, sockets, and special behavior modules.
+Faction base variants set the expected definition subtype, faction-colored debug visuals, and faction presentation defaults. The Player branch accepts only `PlayerUnitDefinition`; the Ally and Enemy branches accept only `AIUnitDefinition` with the matching faction. Concrete variants assign their definition, model, executor bindings, sockets, and special behavior modules.
 
 ### 13.2 Reuse through nested prefabs
 
@@ -699,7 +804,7 @@ The sandbox panel displays:
 
 - Player health and current weapon
 - Active Player, Ally, and Enemy counts
-- Active and inactive pool counts
+- Active, inactive, created, peak, failed-rent, capacity-reached, and overflow-destroy pool counts
 - Selected or hovered unit faction, health, AI state, and current target
 - Last interaction result
 - Toggles for chase range, attack range, target line, and spawn points
@@ -715,7 +820,7 @@ Gizmos use consistent colors: chase range in yellow, attack range in red, curren
 3. At attack range, the brain stops the motor and requests an attack.
 4. `AttackController` starts windup and creates an attack sequence ID.
 5. At the impact event, `MeleeAttackExecutor` rechecks range and creates a hit.
-6. `InteractionSystem` validates source, target, faction, and duplicate-hit rules.
+6. `InteractionSystem` validates the captured source identity and faction, the current target state, and duplicate-hit rules without requiring the source to remain active.
 7. `DamageController` applies damage and optional effects.
 8. `HealthController` reports health change or death.
 
@@ -817,10 +922,10 @@ Minimum test set:
 | `DamageRulesTests` | Inactive/dead rejection, invulnerability, zero or negative damage, accepted result data. |
 | `WeaponCycleTests` | Previous/next wrapping and single-item behavior. |
 | `StunnerHitPolicyTests` | Stun on 1, 4, 7; no advancement on miss or rejected hit; reset on respawn. |
-| `TargetSelectionTests` | Nearest valid target, invalid faction, dead target, range boundary, deterministic equal-distance tie. |
-| `AttackSequenceTests` | One target hit once per sequence and allowed again by a new sequence. |
+| `TargetSelectionTests` | Nearest valid target, invalid faction, dead target, XZ root-position range boundary, multiple-hurtbox deduplication, deterministic equal-distance tie. |
+| `AttackSequenceTests` | One target hit once per composite `AttackKey`, allowed again by a new key, sequence-number reuse under a new source spawn, and ledger clearing/reuse. |
 | `SpawnFormationTests` | Exactly three distinct MiniDivisible offsets around the death point. |
-| `CatalogValidationTests` | Duplicate and missing pool/unit IDs and incompatible definitions. |
+| `CatalogValidationTests` | Duplicate and missing pool/unit IDs, Player/AI definition subtype rules, contextual zero-value rules, pool capacity configuration, and incompatible executor bindings. |
 
 Prefer plain `[Test]` over `[UnityTest]` unless the assertion requires frames or coroutines.
 
@@ -840,6 +945,8 @@ Minimum integration set:
 8. Fire a grenade at a target with multiple hurtboxes and verify only one damage application.
 9. Kill a unit while a projectile from it is in flight and verify the captured payload resolves without reading recycled source state.
 10. Switch Player weapons through Q and E and verify Pistol, GrenadeGun, and SpaceGun wrap correctly.
+11. Verify source and friendly hurtboxes are ignored by projectile and hitscan delivery, while a nearer World obstruction blocks the hit.
+12. Verify an AI unit completes post-activation NavMesh setup before registration or its first decision.
 
 Tests should wait on observable events or explicit conditions with a timeout. Avoid fixed multi-second waits that make failures slow and unreliable.
 
@@ -939,8 +1046,9 @@ The first unit and interaction milestone is complete when:
 
 - `CombatSandbox.unity` begins play without a menu or global GameState.
 - A Player spawns automatically and moves with keyboard and the on-screen stick.
+- The Player has no AI brain, chase component, or chase-range data; only current-weapon attack range affects Player targeting.
 - Q and E cycle Pistol, GrenadeGun, and SpaceGun in both directions.
-- Developer keys and Game view buttons spawn every current Ally and Enemy kind.
+- Developer number keys 1 through 9 plus 0, and Game view buttons, spawn every current Ally and Enemy kind including MiniDivisible.
 - Ally/Player-versus-Enemy interaction rules are correct for melee, projectile, area, and hitscan delivery.
 - Health clamps correctly, death fires once, and dead units stop all actions.
 - AI chase and attack range transitions match the Game Design.
