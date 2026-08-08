@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Step 1 is complete; Step 2 has not been started.
+**Next step:** Steps 1 and 2 are complete; Step 3 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Step 2 has not been started.
+**Next step:** Step 2 is complete; Step 3 has not been started.
 
 ### Implemented
 
@@ -94,3 +94,45 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 
 - `TechnicalDesign.md` requires `HitContext` to contain a `DamageController`, but Step 1 requires `HitContext` before `DamageController` is created in Step 3. Step 1 therefore uses the explicitly documented `IDamageReceiver` compile-time boundary. `DamageController` will be its only production implementation, and Step 3 will close the public hit target to the concrete controller boundary once that type exists. This changes no interaction rule or gameplay behavior.
 - The design requires a damage category in `DamagePayload` but names no category values. An opaque `DamageCategoryId` with explicit validity is present, while no concrete category string or balance meaning was invented. Concrete attacks remain uncategorized until an authoritative category is supplied or required by a later design revision.
+
+## Step 2 — Configuration and Catalog Scripts
+
+**Status:** Complete
+**Completed:** 2026-08-08
+**Commit summary:** `Step 2 completed: add configuration and catalog validation`
+**Next step:** Step 3 has not been started.
+
+### Implemented
+
+- Added the abstract `UnitDefinition` and concrete `PlayerUnitDefinition` and `AIUnitDefinition` ScriptableObjects, keeping Player free of chase and AI fields.
+- Added `AttackDefinition`, `WeaponDefinition`, and `ProjectileDefinition` with explicit delivery compatibility and contextual validation.
+- Added optional accepted-hit effect configuration without defining any unapproved damage categories or gameplay balance values.
+- Added the typed `WeaponId` required by the technical design rather than using a raw string or overloading another identifier.
+- Added `PoolCatalog` and `PoolCatalogEntry` with separate initial prewarm, maximum inactive retained, capacity policy, maximum active, and collection-check settings.
+- Added `UnitCatalog` and its definition-backed entry type so each unit ID has one source of truth.
+- Added `SandboxSpawnConfiguration` with a required Player definition and optional counted AI definitions.
+- Added shared ordered validation results and finite-number validation used by every definition, catalog, configuration, `OnValidate` path, and Edit Mode test.
+- Kept validation at the asset/reference level; no validator inspects prefab components before the components exist.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Live-project compilation | Final Unity Tundra build succeeded at `Editor.log` line 29954 and the runtime/test assemblies reloaded successfully at line 29967. | Pass |
+| Compiler/assembly diagnostics | The final live-project code-batch scan found 0 C# compiler errors, C# compiler warnings, script-compilation failures, or unresolved-assembly diagnostics. | Pass |
+| Edit Mode suite | 56 total, 56 passed, 0 failed, 0 skipped, 0 inconclusive; Unity process exit code 0. This includes 17 Step 2 cases and all 39 earlier cases. | Pass |
+| Catalog rules | Duplicate unit IDs, duplicate pool IDs, null entries, missing definitions, missing prefabs, and pool-capacity invariants are covered. | Pass |
+| Unit-definition rules | Player faction/no-chase shape, AI factions, required default attack, positive chase range, and attack-range-versus-chase-range are covered. | Pass |
+| Attack/projectile rules | Unspecified, missing, and incompatible delivery configurations; Melee/Hitscan exclusions; Projectile/Grenade contextual requirements; and accepted-hit effect durations are covered. | Pass |
+| Numeric rules | Required damage/range/cooldown values and optional windup/recovery/gravity/radius/prewarm values are independently covered for zero, negative, NaN, or infinity as appropriate. | Pass |
+| Asset scope | No persistent concrete definition, catalog, projectile, weapon, prefab, scene, or balance asset was created; test objects exist only in memory. | Pass |
+| Scope audit | The three design documents, their checkboxes, `SampleScene.unity`, and existing input/URP assets are unchanged. | Pass |
+
+The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolated source copy. NUnit XML supplied the totals, and the Unity log was scanned for compiler and assembly diagnostics before cleanup.
+
+### Explicit Structural Choices
+
+- The technical design requires a Weapon ID but Step 1 did not list a wrapper for it. `WeaponId` follows the same stable, ordinal, case-sensitive value semantics as the other authored identifiers; no identifier value was invented.
+- Projectile definitions store an explicit compatible delivery type so Projectile and Grenade compatibility is validated without inferring behavior from tuning values. Hitscan has no projectile definition.
+- `DamageCategoryId` remains optional and unset in attack definitions because the design names no concrete damage categories.
+- No concrete ScriptableObject test asset was required: in-memory test instances provide the smallest test surface and leave `Assets/Tests/Fixtures` empty for later fixture assets that genuinely need serialization.
