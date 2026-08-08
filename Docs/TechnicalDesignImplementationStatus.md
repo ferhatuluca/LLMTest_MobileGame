@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 and 2 are complete; Step 3 has not been started.
+**Next step:** Steps 1 through 3 are complete; Step 4 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Step 2 is complete; Step 3 has not been started.
+**Next step:** Steps 2 and 3 are complete; Step 4 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Step 3 has not been started.
+**Next step:** Step 3 is complete; Step 4 has not been started.
 
 ### Implemented
 
@@ -136,3 +136,48 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 - Projectile definitions store an explicit compatible delivery type so Projectile and Grenade compatibility is validated without inferring behavior from tuning values. Hitscan has no projectile definition.
 - `DamageCategoryId` remains optional and unset in attack definitions because the design names no concrete damage categories.
 - No concrete ScriptableObject test asset was required: in-memory test instances provide the smallest test surface and leave `Assets/Tests/Fixtures` empty for later fixture assets that genuinely need serialization.
+
+## Step 3 — Core Unit Components
+
+**Status:** Complete
+**Completed:** 2026-08-08
+**Commit summary:** `Step 3 completed: add core unit components`
+**Next step:** Step 4 has not been started.
+
+### Implemented
+
+- Added `UnitController` as the composition root for definition, faction, spawn identity, logical activity, required core siblings, and an optional `IUnitMotor` capability.
+- Added `HealthController` as the sole Unity-facing health adapter around `HealthState`; its damage and healing mutation methods remain internal and its state is externally read-only.
+- Added `DamageController` as the concrete target-side damage boundary and changed `HitContext.Target` from the temporary Step 1 interface to `DamageController`.
+- Added `StatusEffectController` with deterministic stun refresh/expiry, movement/chase/attack blocking, and death/return reset behavior.
+- Added `UnitLifecycleController` with observable Inactive, Active, Dying, and PoolReturn transitions; logical spawn/despawn events; synchronous pool callbacks; and a return-request boundary above the pool callback.
+- Added `IPoolable` with activation-independent setup, activation-dependent setup, and return phases without depending on a pool service.
+- Added `IUnitMotor` with shared stop, resume, world-position move, and facing commands for later Player and NavMesh implementations.
+- Added tracked per-spawn unsubscribe actions while keeping permanent Health-to-Lifecycle sibling wiring until destruction; publishers never blanket-clear their events.
+- Added runtime assembly visibility only for the two project test assemblies so tests can prove internal mutation boundaries without exposing them publicly.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Live-project compilation | Final Unity Tundra build succeeded at `Editor.log` line 31800 and assemblies reloaded successfully at line 31812. | Pass |
+| Compiler/assembly diagnostics | The final live-project batch and isolated test log contain 0 C# errors, C# warnings, script-compilation failures, or unresolved-assembly diagnostics. | Pass |
+| Edit Mode suite | 83 total, 83 passed, 0 failed, 0 skipped, 0 inconclusive; Unity process exit code 0. This includes 27 Step 3 cases and all 56 earlier cases. | Pass |
+| Health/damage boundary | Reflection and integration tests prove `HealthController` has no public health mutator or state escape and accepted hits reach it through concrete `DamageController`. | Pass |
+| Damage/death behavior | Exact applied amounts, overkill clamping, invulnerability, invalid amounts, event ordering, lethal-effect rejection, death once, and later dead-target rejection are covered. | Pass |
+| Status behavior | Immediate action blocking, maximum-duration refresh, deterministic expiry once, direct dead-target rejection, and coherent clear-on-death state are covered. | Pass |
+| Lifecycle behavior | Two-phase setup plus final logical activation, Active/Dying/PoolReturn/Inactive transitions, early-return guards, immediate death-return requests, logical despawn once, and partial setup cleanup are covered. | Pass |
+| Pool subscription behavior | Two death/return/respawn cycles prove permanent sibling wiring survives without duplication and tracked current-spawn listeners are selectively removed. | Pass |
+| Programmatic fixture scope | All component tests construct GameObjects and ScriptableObjects in memory; no production prefab, scene object, concrete balance asset, or persistent test asset was created. | Pass |
+| Independent review | Read-only semantic audit passed after lifecycle reentrancy, event ordering, and activation-return regressions were closed. | Pass |
+| Scope audit | The design documents, their checkboxes, `SampleScene.unity`, and existing input/URP assets are unchanged. | Pass |
+
+The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchronized with the final runtime and test sources. NUnit XML supplied the totals, and the Unity log was scanned for compiler and assembly diagnostics before cleanup.
+
+### Explicit Structural Choices
+
+- Damage rejection checks a dead target before inactive state, so a Dying unit reports `TargetDead`; the design does not prescribe precedence, and this preserves the most specific diagnostic without changing acceptance rules.
+- `DamageResolved` publishes every applied or rejected result for diagnostics; listeners are observation-only and cannot alter the returned result.
+- `IUnitMotor.MoveTo` and `FaceTowards` use world positions. This resolves the unspecified signature in a form that both direct Player movement and later NavMesh destination movement can implement without weakening stop/resume semantics.
+- A return requested during Dying is published through `PoolReturnRequested` only after lifecycle callbacks finish, before any future `PoolManager` begins its synchronous `IPoolable.PrepareForReturn` sequence. Return requests during logical activation finalization are rejected so activation cannot report success for an already-returned unit.
+- Logical `Despawned` publishes when a unit becomes non-participating at Dying or PoolReturn; the later physical return exposes PoolReturn and Inactive state transitions without publishing a second logical despawn.

@@ -23,20 +23,6 @@ namespace MonstersVsZombies.Combat.Damage
         Area
     }
 
-    /// <summary>
-    /// Sequencing boundary used until DamageController is implemented in Step 3.
-    /// DamageController is the only production implementation permitted by the combat design.
-    /// </summary>
-    public interface IDamageReceiver
-    {
-        SpawnId SpawnId { get; }
-        UnitFaction Faction { get; }
-        bool IsTargetActive { get; }
-        bool IsAlive { get; }
-
-        DamageResult ApplyDamage(HitContext hitContext);
-    }
-
     public readonly struct DamagePayload
     {
         private readonly StatusEffectPayload[] _statusEffects;
@@ -108,7 +94,7 @@ namespace MonstersVsZombies.Combat.Damage
     public readonly struct HitContext
     {
         public DamagePayload Payload { get; }
-        public IDamageReceiver Target { get; }
+        public DamageController Target { get; }
         public Vector3 Position { get; }
         public Vector3 Normal { get; }
         public HitType HitType { get; }
@@ -121,7 +107,7 @@ namespace MonstersVsZombies.Combat.Damage
 
         public HitContext(
             DamagePayload payload,
-            IDamageReceiver target,
+            DamageController target,
             Vector3 position,
             Vector3 normal,
             HitType hitType,
