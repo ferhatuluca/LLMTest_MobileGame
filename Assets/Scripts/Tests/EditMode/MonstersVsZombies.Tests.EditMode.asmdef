@@ -1,0 +1,21 @@
+{
+  "name": "MonstersVsZombies.Tests.EditMode",
+  "rootNamespace": "MonstersVsZombies.Tests.EditMode",
+  "references": [
+    "MonstersVsZombies.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

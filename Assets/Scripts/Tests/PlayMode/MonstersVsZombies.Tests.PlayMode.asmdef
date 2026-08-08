@@ -1,0 +1,19 @@
+{
+  "name": "MonstersVsZombies.Tests.PlayMode",
+  "rootNamespace": "MonstersVsZombies.Tests.PlayMode",
+  "references": [
+    "MonstersVsZombies.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
