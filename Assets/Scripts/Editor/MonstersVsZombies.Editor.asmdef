@@ -3,7 +3,9 @@
   "rootNamespace": "MonstersVsZombies.Editor",
   "references": [
     "MonstersVsZombies.Runtime",
-    "Unity.AI.Navigation"
+    "Unity.AI.Navigation",
+    "Unity.InputSystem",
+    "Unity.ugui"
   ],
   "includePlatforms": [
     "Editor"

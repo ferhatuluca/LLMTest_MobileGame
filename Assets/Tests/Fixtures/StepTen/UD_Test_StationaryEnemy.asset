@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ab14c3d7ed9a5046848f1b0f142e814, type: 3}
+  m_Name: UD_Test_StationaryEnemy
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Data.AIUnitDefinition
+  <UnitId>k__BackingField:
+    <Value>k__BackingField: StationaryEnemyTarget
+  <DisplayName>k__BackingField: Stationary Enemy Target
+  <Faction>k__BackingField: 3
+  <MaximumHealth>k__BackingField: 60
+  <MoveSpeed>k__BackingField: 3.5
+  <TurnSpeed>k__BackingField: 540
+  <PoolId>k__BackingField:
+    <Value>k__BackingField: StationaryEnemyTarget
+  <ChaseRange>k__BackingField: 12
+  <DefaultAttackDefinition>k__BackingField: {fileID: 11400000, guid: 704f90acd7ee52e4fb5c6818555903d7, type: 2}

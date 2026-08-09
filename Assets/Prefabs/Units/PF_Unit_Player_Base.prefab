@@ -1,0 +1,277 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1048408157027813370
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 568371159121673393, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_Name
+      value: PF_Unit_Player_Base
+      objectReference: {fileID: 0}
+    - target: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[1].<DeliveryType>k__BackingField
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[2].<DeliveryType>k__BackingField
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
+      value: 
+      objectReference: {fileID: 8326126761754034768}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[1].<ExecutorComponent>k__BackingField
+      value: 
+      objectReference: {fileID: 6565462646717657329}
+    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      propertyPath: _executorBindings.Array.data[2].<ExecutorComponent>k__BackingField
+      value: 
+      objectReference: {fileID: 8822499557697484293}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5058666403305774970}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8585216906065277225}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8983162262905409307}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7625992564778035327}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8326126761754034768}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6565462646717657329}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8822499557697484293}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1557411312787457836}
+    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7435690156053863280}
+  m_SourcePrefab: {fileID: 100100000, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+--- !u!1 &2405353774085312568 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+  m_PrefabInstance: {fileID: 1048408157027813370}
+  m_PrefabAsset: {fileID: 0}
+--- !u!143 &5058666403305774970
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &8585216906065277225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c785db952f7a734f92304992a030829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Player.PlayerInputReader
+  <MoveAction>k__BackingField: {fileID: 11400000, guid: 4a8852ef50ac17c4086b6fd50fd40a38, type: 2}
+  <PreviousWeaponAction>k__BackingField: {fileID: 11400000, guid: 78ef2ebc5003fbc4d988021f7335b7da, type: 2}
+  <NextWeaponAction>k__BackingField: {fileID: 11400000, guid: 81e06744bc94060478deb2476c1701ed, type: 2}
+  <DebugAttackAction>k__BackingField: {fileID: 0}
+--- !u!114 &8983162262905409307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66d44402f5e6cd348bb9d250ed4655c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Player.PlayerMotor
+--- !u!114 &7625992564778035327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b74d64c88cd06ac4682256bed7b6815e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Player.PlayerWeaponController
+  _weaponSlots: []
+--- !u!114 &8326126761754034768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 266d7ad3f64961e418fb6a3a8f841cd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.ProjectileAttackExecutor
+  <SpawnManager>k__BackingField: {fileID: 0}
+  <InteractionSystem>k__BackingField: {fileID: 0}
+  <AttackOrigin>k__BackingField: {fileID: 0}
+--- !u!114 &6565462646717657329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db3683be14394c24883f63c272742885, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.GrenadeAttackExecutor
+  <SpawnManager>k__BackingField: {fileID: 0}
+  <InteractionSystem>k__BackingField: {fileID: 0}
+  <AttackOrigin>k__BackingField: {fileID: 0}
+--- !u!114 &8822499557697484293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6edf2eb61012c6042bc6ee2d4333973c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.HitscanAttackExecutor
+  <InteractionSystem>k__BackingField: {fileID: 0}
+  <PoolManager>k__BackingField: {fileID: 0}
+  <AttackOrigin>k__BackingField: {fileID: 0}
+  <BeamPoolId>k__BackingField:
+    <Value>k__BackingField: 
+  <CastCapacity>k__BackingField: 32
+--- !u!114 &1557411312787457836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e70ca4f7534bd7a40a163fef8e97b7c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Player.PlayerCombatController
+  <ProjectileExecutor>k__BackingField: {fileID: 8326126761754034768}
+  <GrenadeExecutor>k__BackingField: {fileID: 6565462646717657329}
+  <HitscanExecutor>k__BackingField: {fileID: 8822499557697484293}
+  <AttackOrigin>k__BackingField: {fileID: 5336998804570421696}
+  <BeamPoolId>k__BackingField:
+    <Value>k__BackingField: LaserBeam
+  <HitscanCastCapacity>k__BackingField: 32
+--- !u!114 &7435690156053863280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2405353774085312568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn
+--- !u!4 &5336998804570421696 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4943938129399217722, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
+  m_PrefabInstance: {fileID: 1048408157027813370}
+  m_PrefabAsset: {fileID: 0}

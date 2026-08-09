@@ -3,6 +3,7 @@ using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Spawning;
 using MonstersVsZombies.Units;
+using MonstersVsZombies.Units.Player;
 using UnityEngine;
 
 namespace MonstersVsZombies.Core.Bootstrap
@@ -12,7 +13,8 @@ namespace MonstersVsZombies.Core.Bootstrap
     {
         [field: SerializeField] public PoolCatalog PoolCatalog { get; private set; }
         [field: SerializeField] public UnitCatalog UnitCatalog { get; private set; }
-        [field: SerializeField] public PlayerUnitDefinition StationaryFixtureDefinition { get; private set; }
+        [field: SerializeField] public PlayerUnitDefinition PlayerDefinition { get; private set; }
+        [field: SerializeField] public AIUnitDefinition StationaryEnemyDefinition { get; private set; }
         [field: SerializeField] public PoolManager PoolManager { get; private set; }
         [field: SerializeField] public SpawnManager SpawnManager { get; private set; }
         [field: SerializeField] public InteractionSystem InteractionSystem { get; private set; }
@@ -21,11 +23,14 @@ namespace MonstersVsZombies.Core.Bootstrap
         [field: SerializeField] public SpawnPointGroup PlayerSpawnPoints { get; private set; }
         [field: SerializeField] public SpawnPointGroup AllySpawnPoints { get; private set; }
         [field: SerializeField] public SpawnPointGroup EnemySpawnPoints { get; private set; }
+        [field: SerializeField] public CameraFollowController CameraFollowController { get; private set; }
+        [field: SerializeField] public PlayerHudController PlayerHudController { get; private set; }
 
         public bool IsInitialized { get; private set; }
         public bool IsGameplayEnabled { get; private set; }
         public string LastFailureMessage { get; private set; } = string.Empty;
-        public UnitController InitialUnit { get; private set; }
+        public UnitController InitialPlayer { get; private set; }
+        public UnitController InitialStationaryEnemy { get; private set; }
 
         private void Awake()
         {
@@ -37,16 +42,18 @@ namespace MonstersVsZombies.Core.Bootstrap
 
         private void Start()
         {
-            if (IsInitialized && !SpawnInitialFixture())
+            if (IsInitialized &&
+                (!SpawnInitialPlayer() || !SpawnStationaryEnemyTarget()))
             {
                 DisableSandbox(LastFailureMessage);
                 return;
             }
 
-            if (IsInitialized && InitialUnit != null)
+            if (IsInitialized && InitialPlayer != null &&
+                InitialStationaryEnemy != null)
             {
                 Debug.Log(
-                    "[CombatSandboxBootstrap] Services initialized and the initial stationary fixture spawned.",
+                    "[CombatSandboxBootstrap] Services initialized, the Player spawned and bound, and the stationary Enemy target spawned.",
                     this);
             }
         }
@@ -88,27 +95,73 @@ namespace MonstersVsZombies.Core.Bootstrap
             return true;
         }
 
-        public bool SpawnInitialFixture()
+        public bool SpawnInitialPlayer()
         {
             if (!IsInitialized || !PlayerSpawnPoints.TryGetNext(out Pose spawnPose))
             {
                 LastFailureMessage =
-                    "The initial stationary fixture requires an initialized sandbox and Player spawn point.";
+                    "The initial Player requires an initialized sandbox and Player spawn point.";
                 return false;
             }
 
             SpawnResult<UnitController> spawnResult =
                 InitialSandboxSpawner.Spawn(
-                    StationaryFixtureDefinition,
+                    PlayerDefinition,
                     spawnPose);
             if (!spawnResult.IsSuccess)
             {
                 LastFailureMessage =
-                    $"Initial stationary fixture spawn failed: {spawnResult.FailureReason}.";
+                    $"Initial Player spawn failed: {spawnResult.FailureReason}.";
                 return false;
             }
 
-            InitialUnit = spawnResult.Entity;
+            UnitController player = spawnResult.Entity;
+            PlayerMotor playerMotor = player.GetComponent<PlayerMotor>();
+            PlayerCombatController playerCombat =
+                player.GetComponent<PlayerCombatController>();
+            if (playerMotor == null || playerCombat == null ||
+                !playerMotor.BindCamera(CameraFollowController.transform) ||
+                !playerCombat.ConfigureRuntimeServices(
+                    SpawnManager,
+                    InteractionSystem,
+                    PoolManager) ||
+                !CameraFollowController.Bind(player) ||
+                !PlayerHudController.Bind(player))
+            {
+                PlayerHudController.Unbind();
+                CameraFollowController.Clear();
+                SpawnManager.ReturnUnit(player);
+                LastFailureMessage =
+                    "The initial Player could not bind camera, HUD, input, or combat runtime services.";
+                return false;
+            }
+
+            InitialPlayer = player;
+            LastFailureMessage = string.Empty;
+            return true;
+        }
+
+        public bool SpawnStationaryEnemyTarget()
+        {
+            if (!IsInitialized || !EnemySpawnPoints.TryGetNext(out Pose spawnPose))
+            {
+                LastFailureMessage =
+                    "The stationary Enemy target requires an initialized sandbox and Enemy spawn point.";
+                return false;
+            }
+
+            SpawnResult<UnitController> spawnResult =
+                InitialSandboxSpawner.Spawn(
+                    StationaryEnemyDefinition,
+                    spawnPose);
+            if (!spawnResult.IsSuccess)
+            {
+                LastFailureMessage =
+                    $"Stationary Enemy target spawn failed: {spawnResult.FailureReason}.";
+                return false;
+            }
+
+            InitialStationaryEnemy = spawnResult.Entity;
             LastFailureMessage = string.Empty;
             return true;
         }
@@ -116,7 +169,8 @@ namespace MonstersVsZombies.Core.Bootstrap
         internal void Configure(
             PoolCatalog poolCatalog,
             UnitCatalog unitCatalog,
-            PlayerUnitDefinition stationaryFixtureDefinition,
+            PlayerUnitDefinition playerDefinition,
+            AIUnitDefinition stationaryEnemyDefinition,
             PoolManager poolManager,
             SpawnManager spawnManager,
             InteractionSystem interactionSystem,
@@ -124,11 +178,14 @@ namespace MonstersVsZombies.Core.Bootstrap
             InitialSandboxSpawner initialSandboxSpawner,
             SpawnPointGroup playerSpawnPoints,
             SpawnPointGroup allySpawnPoints,
-            SpawnPointGroup enemySpawnPoints)
+            SpawnPointGroup enemySpawnPoints,
+            CameraFollowController cameraFollowController,
+            PlayerHudController playerHudController)
         {
             PoolCatalog = poolCatalog;
             UnitCatalog = unitCatalog;
-            StationaryFixtureDefinition = stationaryFixtureDefinition;
+            PlayerDefinition = playerDefinition;
+            StationaryEnemyDefinition = stationaryEnemyDefinition;
             PoolManager = poolManager;
             SpawnManager = spawnManager;
             InteractionSystem = interactionSystem;
@@ -137,18 +194,25 @@ namespace MonstersVsZombies.Core.Bootstrap
             PlayerSpawnPoints = playerSpawnPoints;
             AllySpawnPoints = allySpawnPoints;
             EnemySpawnPoints = enemySpawnPoints;
+            CameraFollowController = cameraFollowController;
+            PlayerHudController = playerHudController;
         }
 
         private bool ValidateReferences(out string failureMessage)
         {
             if (PoolCatalog == null || !PoolCatalog.Validate().IsValid ||
                 UnitCatalog == null || !UnitCatalog.Validate().IsValid ||
-                StationaryFixtureDefinition == null ||
-                !StationaryFixtureDefinition.Validate().IsValid ||
+                PlayerDefinition == null ||
+                !PlayerDefinition.Validate().IsValid ||
+                StationaryEnemyDefinition == null ||
+                !StationaryEnemyDefinition.Validate().IsValid ||
                 PoolManager == null || SpawnManager == null ||
                 InteractionSystem == null || UnitRegistry == null ||
                 InitialSandboxSpawner == null || PlayerSpawnPoints == null ||
-                AllySpawnPoints == null || EnemySpawnPoints == null)
+                AllySpawnPoints == null || EnemySpawnPoints == null ||
+                CameraFollowController == null ||
+                PlayerHudController == null ||
+                !PlayerHudController.ValidateConfiguration(out _))
             {
                 failureMessage =
                     "CombatSandboxBootstrap has missing or invalid catalogs, definitions, services, or spawn groups.";
@@ -164,12 +228,16 @@ namespace MonstersVsZombies.Core.Bootstrap
             }
 
             if (!UnitCatalog.TryGetDefinition(
-                    StationaryFixtureDefinition.UnitId,
-                    out UnitDefinition catalogDefinition) ||
-                catalogDefinition != StationaryFixtureDefinition)
+                    PlayerDefinition.UnitId,
+                    out UnitDefinition playerCatalogDefinition) ||
+                playerCatalogDefinition != PlayerDefinition ||
+                !UnitCatalog.TryGetDefinition(
+                    StationaryEnemyDefinition.UnitId,
+                    out UnitDefinition enemyCatalogDefinition) ||
+                enemyCatalogDefinition != StationaryEnemyDefinition)
             {
                 failureMessage =
-                    "The stationary fixture definition must be present in UnitCatalog.";
+                    "The Player and stationary Enemy definitions must be present in UnitCatalog.";
                 return false;
             }
 
@@ -196,11 +264,37 @@ namespace MonstersVsZombies.Core.Bootstrap
 
         private void DisableSandbox(string failureMessage)
         {
+            ReleaseInitialGameplay();
             IsGameplayEnabled = false;
             enabled = false;
             Debug.LogError(
                 $"[CombatSandboxBootstrap] {failureMessage}",
                 this);
+        }
+
+        private void ReleaseInitialGameplay()
+        {
+            PlayerHudController?.Unbind();
+            CameraFollowController?.Clear();
+
+            if (SpawnManager == null)
+            {
+                InitialPlayer = null;
+                InitialStationaryEnemy = null;
+                return;
+            }
+
+            if (InitialStationaryEnemy != null)
+            {
+                SpawnManager.ReturnUnit(InitialStationaryEnemy);
+                InitialStationaryEnemy = null;
+            }
+
+            if (InitialPlayer != null)
+            {
+                SpawnManager.ReturnUnit(InitialPlayer);
+                InitialPlayer = null;
+            }
         }
     }
 }

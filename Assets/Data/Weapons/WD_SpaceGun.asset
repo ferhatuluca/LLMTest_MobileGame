@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7583d55ad52ca244e900dd0495408602, type: 3}
+  m_Name: WD_SpaceGun
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Data.WeaponDefinition
+  <WeaponId>k__BackingField:
+    <Value>k__BackingField: SpaceGun
+  <DisplayName>k__BackingField: SpaceGun
+  <AttackDefinition>k__BackingField: {fileID: 11400000, guid: 2dd1a7c659156cd40b3edca491458539, type: 2}
+  <WeaponVisualPrefab>k__BackingField: {fileID: 5775229650238229100, guid: a6c62460384b53e479d65b01f6bc8ca8, type: 3}
+  <MuzzleSocketName>k__BackingField: AttackOrigin

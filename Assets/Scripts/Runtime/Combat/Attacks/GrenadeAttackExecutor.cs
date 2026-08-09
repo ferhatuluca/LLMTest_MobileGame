@@ -1,5 +1,6 @@
 using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Core.Pooling;
+using MonstersVsZombies.Data;
 using MonstersVsZombies.Spawning;
 using UnityEngine;
 
@@ -22,15 +23,20 @@ namespace MonstersVsZombies.Combat.Attacks
                 return CreateRejectedResult(executionContext);
             }
 
-            Vector3 direction = executionContext.Target.transform.position -
-                                AttackOrigin.position;
-            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            ProjectileDefinition projectileDefinition =
+                executionContext.Definition.ProjectileDefinition;
+            if (!BallisticLaunchRules.TryGetLowArcDirection(
+                    AttackOrigin.position,
+                    executionContext.TargetPosition,
+                    projectileDefinition.Speed,
+                    Physics.gravity * projectileDefinition.GravityScale,
+                    out Vector3 direction))
             {
-                direction = AttackOrigin.forward;
+                return CreateRejectedResult(executionContext);
             }
 
             ProjectileSpawnRequest spawnRequest = new ProjectileSpawnRequest(
-                executionContext.Definition.ProjectileDefinition,
+                projectileDefinition,
                 AttackPayloadFactory.Create(executionContext),
                 AttackOrigin.position,
                 Quaternion.LookRotation(direction.normalized, Vector3.up));
@@ -77,6 +83,61 @@ namespace MonstersVsZombies.Combat.Attacks
                 executionContext.Target == null
                     ? default
                     : executionContext.Target.SpawnId);
+        }
+    }
+
+    internal static class BallisticLaunchRules
+    {
+        public static bool TryGetLowArcDirection(
+            Vector3 origin,
+            Vector3 target,
+            float speed,
+            Vector3 gravity,
+            out Vector3 direction)
+        {
+            direction = default;
+            if (speed <= 0f || float.IsNaN(speed) ||
+                float.IsInfinity(speed) || gravity.sqrMagnitude <=
+                Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            float gravityMagnitude = gravity.magnitude;
+            Vector3 up = -gravity / gravityMagnitude;
+            Vector3 displacement = target - origin;
+            float verticalDistance = Vector3.Dot(displacement, up);
+            Vector3 horizontalDisplacement =
+                displacement - (up * verticalDistance);
+            float horizontalDistance = horizontalDisplacement.magnitude;
+            if (horizontalDistance <= Mathf.Epsilon)
+            {
+                direction = displacement.sqrMagnitude <= Mathf.Epsilon
+                    ? up
+                    : displacement.normalized;
+                return true;
+            }
+
+            float speedSquared = speed * speed;
+            float discriminant = (speedSquared * speedSquared) -
+                (gravityMagnitude *
+                 ((gravityMagnitude * horizontalDistance *
+                   horizontalDistance) +
+                  (2f * verticalDistance * speedSquared)));
+            if (discriminant < 0f || float.IsNaN(discriminant) ||
+                float.IsInfinity(discriminant))
+            {
+                return false;
+            }
+
+            float tangent = (speedSquared - Mathf.Sqrt(discriminant)) /
+                            (gravityMagnitude * horizontalDistance);
+            float cosine = 1f / Mathf.Sqrt(1f + (tangent * tangent));
+            float sine = tangent * cosine;
+            direction =
+                (horizontalDisplacement / horizontalDistance * cosine) +
+                (up * sine);
+            return direction.sqrMagnitude > Mathf.Epsilon;
         }
     }
 }

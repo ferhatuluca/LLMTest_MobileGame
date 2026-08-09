@@ -4,7 +4,10 @@
   "references": [
     "MonstersVsZombies.Runtime",
     "MonstersVsZombies.Tests.Fixtures",
-    "Unity.AI.Navigation"
+    "Unity.AI.Navigation",
+    "Unity.InputSystem",
+    "Unity.InputSystem.TestFramework",
+    "Unity.ugui"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

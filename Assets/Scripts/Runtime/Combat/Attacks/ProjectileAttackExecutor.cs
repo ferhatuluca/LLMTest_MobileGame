@@ -22,7 +22,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 return CreateRejectedResult(executionContext);
             }
 
-            Vector3 direction = executionContext.Target.transform.position -
+            Vector3 direction = executionContext.TargetPosition -
                                 AttackOrigin.position;
             if (direction.sqrMagnitude <= Mathf.Epsilon)
             {

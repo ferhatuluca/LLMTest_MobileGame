@@ -1,7 +1,10 @@
 {
   "name": "MonstersVsZombies.Runtime",
   "rootNamespace": "MonstersVsZombies",
-  "references": [],
+  "references": [
+    "Unity.InputSystem",
+    "Unity.ugui"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

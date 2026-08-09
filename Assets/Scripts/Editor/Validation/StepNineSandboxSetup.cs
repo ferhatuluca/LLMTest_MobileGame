@@ -351,7 +351,7 @@ namespace MonstersVsZombies.Editor.Validation
                 unitCatalog);
             SetAutoProperty(
                 bootstrap,
-                nameof(CombatSandboxBootstrap.StationaryFixtureDefinition),
+                nameof(CombatSandboxBootstrap.PlayerDefinition),
                 fixtureDefinition);
             SetAutoProperty(
                 bootstrap,

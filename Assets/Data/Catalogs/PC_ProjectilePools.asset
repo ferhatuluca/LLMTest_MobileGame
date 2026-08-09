@@ -53,3 +53,19 @@ MonoBehaviour:
     <CapacityPolicy>k__BackingField: 0
     <MaximumActiveCount>k__BackingField: 0
     <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: Player
+    <Prefab>k__BackingField: {fileID: 2139264374591308304, guid: f66dd7598e3b6a24da8e23b0cc09535f, type: 3}
+    <InitialPrewarmCount>k__BackingField: 1
+    <MaximumInactiveRetainedCount>k__BackingField: 1
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: StationaryEnemyTarget
+    <Prefab>k__BackingField: {fileID: 449622297479790162, guid: 50be2ca93f0fde14fb1999590cf6a974, type: 3}
+    <InitialPrewarmCount>k__BackingField: 1
+    <MaximumInactiveRetainedCount>k__BackingField: 1
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1

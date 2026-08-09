@@ -214,6 +214,51 @@ namespace MonstersVsZombies.Combat.Attacks
             return true;
         }
 
+        public bool ValidateExecutorForDefinition(
+            AttackDefinition attackDefinition,
+            out string failureMessage)
+        {
+            if (attackDefinition == null || !attackDefinition.Validate().IsValid)
+            {
+                failureMessage = "A valid attack definition is required.";
+                return false;
+            }
+
+            int matchingExecutorCount = 0;
+            AttackExecutorBinding[] bindings =
+                _executorBindings ?? Array.Empty<AttackExecutorBinding>();
+            foreach (AttackExecutorBinding binding in bindings)
+            {
+                if (binding == null ||
+                    !Enum.IsDefined(
+                        typeof(AttackDeliveryType),
+                        binding.DeliveryType) ||
+                    binding.DeliveryType == AttackDeliveryType.Unspecified ||
+                    binding.Executor == null ||
+                    binding.Executor.DeliveryType != binding.DeliveryType)
+                {
+                    failureMessage =
+                        "An attack executor binding is missing or incompatible.";
+                    return false;
+                }
+
+                if (binding.DeliveryType == attackDefinition.DeliveryType)
+                {
+                    matchingExecutorCount++;
+                }
+            }
+
+            if (matchingExecutorCount != 1)
+            {
+                failureMessage =
+                    $"Attack delivery '{attackDefinition.DeliveryType}' requires exactly one compatible executor.";
+                return false;
+            }
+
+            failureMessage = string.Empty;
+            return true;
+        }
+
         public bool TryStartAttack()
         {
             CacheSiblingComponents();
@@ -281,6 +326,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 new AttackExecutionContext(
                     _unitController,
                     _attackTarget,
+                    _targetingController.CurrentTargetPoint,
                     AttackDefinition,
                     ActiveAttackKey,
                     _hitLedger);

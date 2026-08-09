@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Data.UnitCatalog
   _entries:
   - <Definition>k__BackingField: {fileID: 11400000, guid: baa6882777c7a4e419cb065f042e6061, type: 2}
+  - <Definition>k__BackingField: {fileID: 11400000, guid: a0519beb7e1a7214b9be0ecb33e647b8, type: 2}
+  - <Definition>k__BackingField: {fileID: 11400000, guid: c77e4fa3c64b9a44c821107149534e56, type: 2}

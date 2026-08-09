@@ -39,6 +39,7 @@ namespace MonstersVsZombies.Units
         private UnitLifecycleController _lifecycleController;
         private UnitLifecycleController _subscribedLifecycleController;
         private TargetQueryBuffer _queryBuffer;
+        private DamageTargetProxy _currentTargetProxy;
         private SpawnId _currentTargetSpawnId;
         private float _scanInterval;
         private float _initialScanDelay;
@@ -54,6 +55,13 @@ namespace MonstersVsZombies.Units
         public event Action<TargetingEvent> TargetLost;
 
         public UnitController CurrentTarget { get; private set; }
+        public Vector3 CurrentTargetPoint =>
+            _currentTargetProxy != null &&
+            _currentTargetProxy.TargetCollider != null
+                ? _currentTargetProxy.TargetCollider.bounds.center
+                : CurrentTarget == null
+                    ? transform.position
+                    : CurrentTarget.transform.position;
         public TargetingMode Mode { get; private set; }
         public float QueryRange => _queryRange;
         public bool IsInitialized => _queryBuffer != null;
@@ -256,6 +264,7 @@ namespace MonstersVsZombies.Units
                 _unitController.Faction);
 
             UnitController selectedTarget = null;
+            DamageTargetProxy selectedTargetProxy = null;
             SpawnId selectedSpawnId = default;
             float selectedSquaredDistance = 0f;
             for (int targetIndex = 0;
@@ -285,12 +294,13 @@ namespace MonstersVsZombies.Units
                         selectedSpawnId))
                 {
                     selectedTarget = candidate;
+                    selectedTargetProxy = targetProxy;
                     selectedSpawnId = candidate.SpawnId;
                     selectedSquaredDistance = candidateSquaredDistance;
                 }
             }
 
-            SetTarget(selectedTarget);
+            SetTarget(selectedTarget, selectedTargetProxy);
             return selectedTarget != null;
         }
 
@@ -326,11 +336,14 @@ namespace MonstersVsZombies.Units
                    CurrentTarget.SpawnId == _currentTargetSpawnId;
         }
 
-        private void SetTarget(UnitController target)
+        private void SetTarget(
+            UnitController target,
+            DamageTargetProxy targetProxy)
         {
             if (target == CurrentTarget &&
                 (target == null || target.SpawnId == _currentTargetSpawnId))
             {
+                _currentTargetProxy = targetProxy;
                 return;
             }
 
@@ -341,6 +354,7 @@ namespace MonstersVsZombies.Units
             }
 
             CurrentTarget = target;
+            _currentTargetProxy = targetProxy;
             _currentTargetSpawnId = target.SpawnId;
             if (target.LifecycleController != null)
             {
@@ -357,6 +371,7 @@ namespace MonstersVsZombies.Units
         {
             if (CurrentTarget == null)
             {
+                _currentTargetProxy = null;
                 _currentTargetSpawnId = default;
                 return;
             }
@@ -365,6 +380,7 @@ namespace MonstersVsZombies.Units
             SpawnId lostSpawnId = _currentTargetSpawnId;
             ReleaseCurrentTargetSubscription();
             CurrentTarget = null;
+            _currentTargetProxy = null;
             _currentTargetSpawnId = default;
             TargetLost?.Invoke(new TargetingEvent(
                 _unitController,

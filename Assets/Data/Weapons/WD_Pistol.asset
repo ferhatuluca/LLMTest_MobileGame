@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7583d55ad52ca244e900dd0495408602, type: 3}
+  m_Name: WD_Pistol
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Data.WeaponDefinition
+  <WeaponId>k__BackingField:
+    <Value>k__BackingField: Pistol
+  <DisplayName>k__BackingField: Pistol
+  <AttackDefinition>k__BackingField: {fileID: 11400000, guid: 4f1c56d0b7c30614d850b1ffe8e058af, type: 2}
+  <WeaponVisualPrefab>k__BackingField: {fileID: 7470548363438416122, guid: 18c6434172a20004dadba5a012671292, type: 3}
+  <MuzzleSocketName>k__BackingField: AttackOrigin

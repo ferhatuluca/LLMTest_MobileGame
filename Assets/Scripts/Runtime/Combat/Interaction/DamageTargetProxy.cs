@@ -1,12 +1,13 @@
 using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Core;
+using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Units;
 using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Interaction
 {
     [DisallowMultipleComponent]
-    public sealed class DamageTargetProxy : MonoBehaviour
+    public sealed class DamageTargetProxy : MonoBehaviour, IPoolable
     {
         public UnitController UnitController { get; private set; }
         public DamageController DamageController { get; private set; }
@@ -49,6 +50,20 @@ namespace MonstersVsZombies.Combat.Interaction
 
             failureMessage = string.Empty;
             return true;
+        }
+
+        public bool PrepareForSpawn()
+        {
+            return ValidateReferences(out _);
+        }
+
+        public bool CompleteSpawn()
+        {
+            return IsConfigured && gameObject.activeInHierarchy;
+        }
+
+        public void PrepareForReturn()
+        {
         }
 
         internal void CacheOwnerReferences()

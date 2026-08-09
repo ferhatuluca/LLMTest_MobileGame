@@ -24,7 +24,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 return CreateRejectedResult(executionContext);
             }
 
-            Vector3 impactPosition = executionContext.Target.transform.position;
+            Vector3 impactPosition = executionContext.TargetPosition;
             Vector3 impactNormal =
                 executionContext.Source.transform.position - impactPosition;
             if (impactNormal.sqrMagnitude <= Mathf.Epsilon)

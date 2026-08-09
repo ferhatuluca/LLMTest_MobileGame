@@ -11,6 +11,7 @@ namespace MonstersVsZombies.Combat.Attacks
     {
         public UnitController Source { get; }
         public UnitController Target { get; }
+        public Vector3 TargetPosition { get; }
         public AttackDefinition Definition { get; }
         public AttackKey AttackKey { get; }
         public AttackHitLedger HitLedger { get; }
@@ -21,9 +22,29 @@ namespace MonstersVsZombies.Combat.Attacks
             AttackDefinition definition,
             AttackKey attackKey,
             AttackHitLedger hitLedger)
+            : this(
+                source,
+                target,
+                target == null
+                    ? default
+                    : target.transform.position,
+                definition,
+                attackKey,
+                hitLedger)
+        {
+        }
+
+        public AttackExecutionContext(
+            UnitController source,
+            UnitController target,
+            Vector3 targetPosition,
+            AttackDefinition definition,
+            AttackKey attackKey,
+            AttackHitLedger hitLedger)
         {
             Source = source;
             Target = target;
+            TargetPosition = targetPosition;
             Definition = definition;
             AttackKey = attackKey;
             HitLedger = hitLedger;

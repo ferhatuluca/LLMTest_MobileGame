@@ -77,7 +77,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 return CreateRejectedResult(executionContext);
             }
 
-            Vector3 castDirection = executionContext.Target.transform.position -
+            Vector3 castDirection = executionContext.TargetPosition -
                                     AttackOrigin.position;
             if (castDirection.sqrMagnitude <= Mathf.Epsilon)
             {

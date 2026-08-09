@@ -283,30 +283,26 @@ namespace MonstersVsZombies.Tests.EditMode
             SpawnPointGroup playerSpawns = CreateSpawnGroup("PlayerSpawns");
             SpawnPointGroup allySpawns = CreateSpawnGroup("AllySpawns");
             SpawnPointGroup enemySpawns = CreateSpawnGroup("EnemySpawns");
-            CombatSandboxBootstrap bootstrap =
-                CreateComponent<CombatSandboxBootstrap>("Bootstrap");
-            bootstrap.Configure(
-                poolCatalog,
-                unitCatalog,
-                definition,
-                poolManager,
-                spawnManager,
-                interactionSystem,
-                unitRegistry,
-                initialSpawner,
-                playerSpawns,
-                allySpawns,
-                enemySpawns);
-
-            Assert.That(bootstrap.InitializeServices(),
+            Assert.That(poolManager.Initialize(poolCatalog, out string poolFailure),
                 Is.True,
-                bootstrap.LastFailureMessage);
+                poolFailure);
+            Assert.That(
+                spawnManager.Initialize(
+                    poolManager,
+                    unitRegistry,
+                    out string spawnFailure),
+                Is.True,
+                spawnFailure);
+            Assert.That(initialSpawner.Configure(spawnManager), Is.True);
             Assert.That(poolManager.IsInitialized, Is.True);
             Assert.That(spawnManager.IsInitialized, Is.True);
-            Assert.That(bootstrap.SpawnInitialFixture(),
+            Assert.That(playerSpawns.TryGetNext(out Pose firstPose), Is.True);
+            SpawnResult<UnitController> firstSpawn =
+                initialSpawner.Spawn(definition, firstPose);
+            Assert.That(firstSpawn.IsSuccess,
                 Is.True,
-                bootstrap.LastFailureMessage);
-            UnitController firstUnit = bootstrap.InitialUnit;
+                firstSpawn.FailureReason.ToString());
+            UnitController firstUnit = firstSpawn.Entity;
             SpawnId firstSpawnId = firstUnit.SpawnId;
             Assert.That(firstUnit.IsActive, Is.True);
             Assert.That(firstUnit.HealthController.CurrentHealth, Is.EqualTo(100f));
@@ -339,10 +335,13 @@ namespace MonstersVsZombies.Tests.EditMode
             Assert.That(firstUnit.gameObject.activeSelf, Is.False);
             Assert.That(unitRegistry.Count, Is.Zero);
 
-            Assert.That(bootstrap.SpawnInitialFixture(),
+            Assert.That(playerSpawns.TryGetNext(out Pose secondPose), Is.True);
+            SpawnResult<UnitController> secondSpawn =
+                initialSpawner.Spawn(definition, secondPose);
+            Assert.That(secondSpawn.IsSuccess,
                 Is.True,
-                bootstrap.LastFailureMessage);
-            UnitController secondUnit = bootstrap.InitialUnit;
+                secondSpawn.FailureReason.ToString());
+            UnitController secondUnit = secondSpawn.Entity;
             Assert.That(secondUnit, Is.SameAs(firstUnit));
             Assert.That(secondUnit.SpawnId, Is.Not.EqualTo(firstSpawnId));
             Assert.That(secondUnit.IsActive, Is.True);

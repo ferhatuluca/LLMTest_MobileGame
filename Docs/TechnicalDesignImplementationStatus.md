@@ -428,7 +428,7 @@ The definitive suite ran after a second successful idempotent asset-automation p
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 9 completed: add common unit prefab and sandbox`
-**Next step:** Step 10 has not been started.
+**Next step:** Step 10 is complete; Step 11 has not been started.
 
 ### Implemented
 
@@ -467,3 +467,53 @@ The definitive Edit Mode suite ran through the project-local verification comman
 - Bootstrap dependencies are wired explicitly in the saved scene. Failure of any required reference, catalog, definition, spawn group, layer, pool initialization, or initial spawn disables gameplay as one coherent sandbox failure rather than allowing partial startup.
 - Targeting query capacity `32`, scan interval `0.25 s`, and initial offset `0 s` are the temporary sandbox values already specified by the implementation design, not newly invented balance values.
 - The fixture pool uses one prewarmed instance and one retained inactive instance so the required reuse cycle can be verified without adding a concrete Player/Ally/Enemy unit before their numbered steps.
+
+## Step 10 - Player Unit, Input, Movement, Weapons, and HUD
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 10 completed: add Player movement weapons and prefab`
+**Next step:** Step 11 has not been started.
+
+### Implemented
+
+- Replaced the template gameplay action map through Unity Input System Editor APIs with `Move`, `PreviousWeapon`, and `NextWeapon`; retained the existing input asset and GUID while removing the conflicting template gameplay actions.
+- Bound movement to WASD, arrow keys, and `<Gamepad>/leftStick`; bound weapon cycling to Q/E and created native `InputActionReference` assets for all three actions.
+- Added `PlayerInputReader`, a camera-relative `CharacterController`-based `PlayerMotor`, `CameraFollowController`, and an Input System `OnScreenStick` bound to the same left-stick control.
+- Added `PlayerWeaponController` with the authored Pistol, GrenadeGun, and SpaceGun order, safe wrap-around selection, nested weapon visuals, and attack-range updates without replacing the shared `AttackController`.
+- Added `PlayerCombatController` that configures the existing projectile, grenade, and hitscan executors once, acquires targets only within the selected weapon's authored attack range, and automatically attacks without chase movement.
+- Extended attack execution to snapshot the selected hurtbox center as its delivery target point, and made GrenadeGun derive a low ballistic arc from its authored launch speed and Unity gravity.
+- Created the exact temporary Player Pistol attack and Pistol/GrenadeGun/SpaceGun weapon definitions from the implementation table, plus `UD_Player` with no AI movement or chase configuration.
+- Created `PF_Unit_Player_Base` and concrete `PF_Player` prefab variants through Unity Editor automation, including the input, movement, targeting, combat, lifecycle, three delivery executors, CharacterController, and weapon-visual composition.
+- Added a stationary, non-attacking Enemy test fixture for manual and automated weapon validation and registered the Player, fixture, and required projectile pools in the existing catalogs.
+- Updated `CombatSandbox` through Unity Editor automation to spawn and bind the Player and stationary Enemy, follow the Player camera, and present health/current-weapon HUD text plus the on-screen movement stick.
+- Made bootstrap failure transactional: partial Player/HUD/camera/target startup is released and unbound instead of leaving half-configured gameplay active.
+- Added Edit Mode coverage for authored assets, prefab/scene composition, Input System keyboard and virtual-stick input, camera-relative movement, weapon wrap/range updates, no-chase behavior, all three real delivery paths, death, return, and reuse reset.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final committed code shape; the Tundra build succeeded in `Editor.log` at line 26755 and assemblies reloaded successfully. | Pass |
+| Compiler/assembly diagnostics | The final compile/test log segment contains 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | The rerunnable Step 10 Editor command created, updated, reloaded, and verified the Input System assets, definitions, prefabs, catalogs, HUD, on-screen stick, and saved scene without hand-authored Unity YAML or GUIDs. | Pass |
+| Edit Mode suite | 231 total, 231 passed, 0 failed, 0 skipped, 0 inconclusive at `2026-08-09T13:27:50Z`. This includes 11 Step 10 cases and all 220 earlier cases. | Pass |
+| Input behavior | Tests use the official Input System test fixture to press Q/E through the live action callbacks, prove wrap-around ordering, and drive movement from both keyboard and virtual left-stick controls. | Pass |
+| Weapon behavior | Pistol Bullet, Grenade fuse/area, and SpaceGun Hitscan deliveries each damage the stationary hostile target through the production executors and `InteractionSystem`; range changes do not replace `AttackController`. | Pass |
+| Player lifecycle | Lethal damage returns the Player through production pooling; reuse restores full health, clears transient state, selects Pistol, and assigns a new spawn identity. | Pass |
+| Actual Play Mode startup | The saved `CombatSandbox` initialized its services and spawned/bound the Player and stationary Enemy at `Editor.log` line 26107. | Pass |
+| Actual keyboard and on-screen movement | Live keyboard movement changed the Player from `(0.000, 0.000, 0.000)` at line 26120 to `(-0.680, 0.080, 2.883)` at line 26133. The scene's real `OnScreenStick` then drove `<Gamepad>/leftStick` and advanced the Player to `z=3.420` before release at lines 26146-26172. | Pass |
+| Actual three-weapon delivery | In the saved scene, a controlled Pistol shot reduced Enemy health from 50 to 40, GrenadeGun reduced it from 40 to 15, and SpaceGun reduced it from 15 to 0 at `Editor.log` lines 26172-26211. | Pass |
+| Scope audit | `SampleScene`, packages, layers, design documents, and design-document checkboxes are unchanged; no third-party or paid asset was introduced. | Pass |
+
+The definitive suite ran after the final source batch through the project-local verification command in the verified target Editor. The actual Play Mode check used the saved scene's bootstrap and on-screen control, then exited Play Mode without saving runtime state.
+
+### Explicit Structural Choices
+
+- `PlayerInputReader` consumes serialized `InputActionReference` assets and exposes events/state; gameplay code does not poll `Keyboard.current` or embed device-specific input checks.
+- Player targeting is attack-range-only and never issues a motor destination, so manual camera-relative motion remains the Player's sole locomotion source.
+- All three executors exist exactly once on the Player prefab and are selected by delivery type through the shared `AttackController`; weapon switching changes definition/binding rather than replacing components.
+- The stationary Enemy is a test fixture with an authored unit definition and inherited common-unit capabilities but no autonomous AI brain, so it cannot move or initiate attacks during the Step 10 exit check.
+- The health/current-weapon labels and simple weapon meshes are implementation placeholders built with project-native Unity components. They introduce no unapproved art package or balance value.
+- The common unit prefab places both its `Hurtbox` and `AttackOrigin` at `0.5 m`, matching the common hurtbox radius. This clears the World-layer ground for swept projectile casts and provides an aligned target center; it is prefab geometry, not a combat balance value.
+- Attack execution snapshots that selected hurtbox center at impact time. GrenadeGun chooses the mathematical low arc that reaches the snapshot using its authored speed and current Unity gravity, adding no launch-angle tuning value.
