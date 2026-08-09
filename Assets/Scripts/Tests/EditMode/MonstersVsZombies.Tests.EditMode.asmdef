@@ -2,7 +2,8 @@
   "name": "MonstersVsZombies.Tests.EditMode",
   "rootNamespace": "MonstersVsZombies.Tests.EditMode",
   "references": [
-    "MonstersVsZombies.Runtime"
+    "MonstersVsZombies.Runtime",
+    "MonstersVsZombies.Tests.Fixtures"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

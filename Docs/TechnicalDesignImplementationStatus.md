@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 through 4 are complete; Step 5 has not been started.
+**Next step:** Steps 1 through 5 are complete; Step 6 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Steps 2 through 4 are complete; Step 5 has not been started.
+**Next step:** Steps 2 through 5 are complete; Step 6 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Steps 3 and 4 are complete; Step 5 has not been started.
+**Next step:** Steps 3 through 5 are complete; Step 6 has not been started.
 
 ### Implemented
 
@@ -142,7 +142,7 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 3 completed: add core unit components`
-**Next step:** Step 4 is complete; Step 5 has not been started.
+**Next step:** Steps 4 and 5 are complete; Step 6 has not been started.
 
 ### Implemented
 
@@ -187,7 +187,7 @@ The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchr
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 4 completed: add unit registration and interaction`
-**Next step:** Step 5 has not been started.
+**Next step:** Step 5 is complete; Step 6 has not been started.
 
 ### Implemented
 
@@ -227,3 +227,49 @@ The final suite ran through the project-local verification command in the verifi
 - Query capacities remain constructor inputs owned by later targeting/delivery systems. Step 4 introduces no production capacity or warning-throttle balance value.
 - The ledger reserves a target immediately before damage dispatch to block a reentrant copy of the same hit. If the downstream damage boundary unexpectedly rejects the dispatch, that reservation is removed so only accepted hits remain recorded.
 - Filling a non-allocating physics buffer sets `WasSaturated` conservatively because Unity cannot distinguish an exactly full result from omitted overflow without allocating or issuing another query.
+
+## Step 5 - PoolManager
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 5 completed: add pooled entity and pool manager`
+**Next step:** Step 6 has not been started.
+
+### Implemented
+
+- Added `PooledEntity` as the root aggregator for activation-independent, activation-dependent, and return callbacks on generic `IPoolable` components.
+- Cached only callbacks owned by the nearest pooled root, so nested pooled hierarchies retain their own lifecycle boundary without concrete component searches.
+- Added an internal `RuntimeObjectPool` wrapper around Unity `ObjectPool<PooledEntity>` and a scene-level `PoolManager` with validated `PoolCatalog` initialization and stable `PoolId` lookup.
+- Added inactive prewarming and an inactive creation root so prefab construction cannot accidentally run activation-dependent behavior before rent and spawn setup.
+- Implemented Expandable and HardActiveLimit policies while using Unity `ObjectPool<T>.maxSize` only for maximum inactive retention.
+- Implemented generic rent and return boundaries: rent always yields an inactive root; return clears rented participation before callbacks, runs reset callbacks, deactivates the root, and releases it.
+- Added Editor/Development-only collection checks from catalog configuration.
+- Added immutable per-pool diagnostics for cumulative created, current rented-active, current inactive, peak rented-active, failed-rent, capacity-reached, overflow-destroy, and effective collection-check state.
+- Added manager-level accounting for failed unknown-pool rents, which cannot belong to a valid per-pool diagnostic record.
+- Added controlled failures for missing catalogs, invalid catalog entries, pooled prefabs without a root `PooledEntity`, unknown IDs, capacity limits, foreign returns, and double returns.
+- Added a runtime-compatible, non-production test-fixture assembly under `Assets/Tests/Fixtures` so Unity can attach the programmatic `IPoolable` probe without creating a scene or production prefab.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the target project; the final Tundra build succeeded in `Editor.log` at line 4131 and assemblies reloaded at line 4144. | Pass |
+| Compiler/assembly diagnostics | The final code-batch scan after line 4131 found 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, or NUnit assertion exceptions. | Pass |
+| Edit Mode suite | 141 total, 141 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 16 Step 5 cases and all 125 earlier cases. | Pass |
+| Prewarm and inactivity | Configured prewarm counts, created/inactive/active/peak diagnostics, inactive roots, and zero `OnEnable` calls during prewarm are asserted. | Pass |
+| Spawn phases | Tests prove context is assigned while inactive, activation-independent reset runs inactive, activation-dependent setup runs after GameObject activation but before logical activation/registration, and both failure phases can return safely without logical activation. | Pass |
+| Return and reuse | The same instance is reused with a new `SpawnId`; prior identity, logical/registration state, and transient state are reset, and returned objects are inactive. | Pass |
+| Capacity policies | Expandable grows to three simultaneous rents without a failed rent; HardActiveLimit rejects before `ObjectPool.Get`; maximum inactive retention destroys overflow and increments its diagnostic. | Pass |
+| Controlled errors | Missing/invalid catalogs, missing root aggregator, unknown rent, foreign return, and double return outcomes are asserted. | Pass |
+| Generic aggregation | Nested pooled roots own their callbacks independently, and the pool code contains no search for unit, physics, navigation, particle, or trail component types. | Pass |
+| Scope audit | No scene, production prefab, ScriptableObject asset, input asset, balance value, package, or design-document checkbox was changed. | Pass |
+
+The definitive suite ran through the project-local verification command in the verified correct target Editor. `Logs/ImplementationEditModeSummary.txt` supplied the final totals, and the final Unity log segment was scanned for compiler, assembly, unhandled-exception, and assertion diagnostics.
+
+### Explicit Structural Choices
+
+- Pool diagnostics use "active" to mean currently rented from the pool. Logical gameplay participation remains a later `SpawnManager`/lifecycle decision and occurs only after both pooled setup phases succeed.
+- New instances are cloned beneath a temporary inactive manager child, set inactive, then reparented to the manager. This prevents an authored active prefab from receiving `OnEnable` during creation or prewarm without changing the prefab itself.
+- Callback aggregation follows Unity's stable hierarchy/component enumeration and excludes any component whose nearest `PooledEntity` is a nested root. No callback priority system or component-specific reset order was invented.
+- Unknown-pool rent failures increment `PoolManager.UnknownPoolFailedRentCount` and the manager total because there is no valid pool record to own that failure; known-pool failures remain in their per-pool diagnostics.
+- The test fixture assembly is runtime-compatible but not auto-referenced. The Edit Mode test assembly references it explicitly, allowing programmatic `MonoBehaviour` fixtures while keeping them outside production runtime assemblies and assets.

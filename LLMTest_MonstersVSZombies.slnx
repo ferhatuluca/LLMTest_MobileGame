@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="MonstersVsZombies.Runtime.csproj" />
   <Project Path="MonstersVsZombies.Tests.PlayMode.csproj" />
-  <Project Path="MonstersVsZombies.Editor.csproj" />
   <Project Path="MonstersVsZombies.Tests.EditMode.csproj" />
+  <Project Path="MonstersVsZombies.Editor.csproj" />
+  <Project Path="MonstersVsZombies.Tests.Fixtures.csproj" />
 </Solution>
