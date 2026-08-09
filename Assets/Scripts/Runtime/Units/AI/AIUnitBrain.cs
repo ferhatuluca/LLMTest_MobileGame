@@ -5,6 +5,7 @@ using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
+using MonstersVsZombies.Spawning;
 using MonstersVsZombies.Units.Movement;
 using UnityEngine;
 
@@ -48,6 +49,7 @@ namespace MonstersVsZombies.Units.AI
         private UnitLifecycleController _lifecycleController;
         private IUnitMotor _unitMotor;
         private MeleeAttackExecutor _meleeAttackExecutor;
+        private ProjectileAttackExecutor _projectileAttackExecutor;
         private bool _isPreparedForSpawn;
         private bool _isActivationComplete;
         private float _destinationRefreshRemaining;
@@ -105,11 +107,43 @@ namespace MonstersVsZombies.Units.AI
         public bool ConfigureRuntimeServices(
             InteractionSystem interactionSystem)
         {
+            return ConfigureRuntimeServices(null, interactionSystem);
+        }
+
+        public bool ConfigureRuntimeServices(
+            SpawnManager spawnManager,
+            InteractionSystem interactionSystem)
+        {
             CacheSiblingComponents();
-            HasRuntimeServices = interactionSystem != null &&
-                                 _meleeAttackExecutor != null &&
-                                 _meleeAttackExecutor.Configure(
-                                     interactionSystem);
+            if (interactionSystem == null ||
+                !(_unitController?.Definition is AIUnitDefinition definition) ||
+                definition.DefaultAttackDefinition == null)
+            {
+                HasRuntimeServices = false;
+                return false;
+            }
+
+            switch (definition.DefaultAttackDefinition.DeliveryType)
+            {
+                case AttackDeliveryType.Melee:
+                    HasRuntimeServices = _meleeAttackExecutor != null &&
+                        _meleeAttackExecutor.Configure(interactionSystem);
+                    break;
+
+                case AttackDeliveryType.Projectile:
+                    HasRuntimeServices = spawnManager != null &&
+                        _projectileAttackExecutor != null &&
+                        _projectileAttackExecutor.Configure(
+                            spawnManager,
+                            interactionSystem,
+                            _projectileAttackExecutor.AttackOrigin);
+                    break;
+
+                default:
+                    HasRuntimeServices = false;
+                    break;
+            }
+
             return HasRuntimeServices;
         }
 
@@ -326,6 +360,8 @@ namespace MonstersVsZombies.Units.AI
             _statusEffectController = GetComponent<StatusEffectController>();
             _lifecycleController = GetComponent<UnitLifecycleController>();
             _meleeAttackExecutor = GetComponent<MeleeAttackExecutor>();
+            _projectileAttackExecutor =
+                GetComponent<ProjectileAttackExecutor>();
             _unitController?.CacheSiblingComponents();
             _unitMotor = _unitController?.UnitMotor;
         }

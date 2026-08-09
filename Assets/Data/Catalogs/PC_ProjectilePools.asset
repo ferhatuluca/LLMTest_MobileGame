@@ -85,3 +85,59 @@ MonoBehaviour:
     <CapacityPolicy>k__BackingField: 0
     <MaximumActiveCount>k__BackingField: 0
     <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: AllyClassicMelee
+    <Prefab>k__BackingField: {fileID: 8512142045776968324, guid: bdb8df59417ba2540a948a8ac8911ef4, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyClassicMelee
+    <Prefab>k__BackingField: {fileID: 2421031457194681681, guid: 287d97d75e150884d99517234bb31156, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: AllyClassicRange
+    <Prefab>k__BackingField: {fileID: 7025203033562462820, guid: 01f0f91f01dc66549aa149aeecc4924f, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyClassicRange
+    <Prefab>k__BackingField: {fileID: 3229463871965944457, guid: e030d07bc41af7b4b8c385dc2f417ab4, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: AllyDragon
+    <Prefab>k__BackingField: {fileID: 723816237748185008, guid: 9170b74e77257224ca010dfa66ae967b, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyDragon
+    <Prefab>k__BackingField: {fileID: 5966298998324614805, guid: 28f5f3c5a4a4f7f4e8693d52295e9390, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: AllyDoubleHead
+    <Prefab>k__BackingField: {fileID: 7744433862776007553, guid: a82379250253f6b40810954c0e24f2e3, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1

@@ -523,7 +523,7 @@ The definitive suite ran after the final source batch through the project-local 
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 11 completed: add NavMesh AI bases and behavior`
-**Next step:** Step 12 has not been started.
+**Next step:** Step 12 is complete; Step 13 has not been started.
 
 ### Implemented
 
@@ -560,3 +560,46 @@ The definitive suite ran after removal of the temporary automatic live-check hoo
 - `Warp` happens only during activation-dependent pooled initialization. Pool return resets the path, destination bookkeeping, services, target, and AI state before reuse.
 - The Step 11 melee and unit numbers exactly follow the temporary Classic Melee and regular-unit baselines in the implementation design. The concrete fixtures remain test-only; Step 12 production Zombie archetypes have not been introduced early.
 - Ally and Enemy base variants differ only by expected faction metadata and selection-time debug color. Target hostility continues to come from the centralized faction rules.
+
+## Step 12 - Regular Concrete Unit Prefabs
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 12 completed: add regular concrete unit families`
+**Next step:** Step 13 has not been started.
+
+### Implemented
+
+- Created the authoritative Basic Melee, Basic Bullet, Dragon Fireball, and DoubleHead Melee content families without duplicating the three delivery definitions already created in Step 8.
+- Created all seven regular `AIUnitDefinition` assets with the exact temporary health, movement, turn, chase, attack, delivery, and faction values: Ally/Enemy Classic Melee, Ally/Enemy Classic Range, Ally/Enemy Dragon, and Ally DoubleHead.
+- Created reusable nested Classic Melee, Classic Range, Dragon, and DoubleHead visual prefabs with project-native placeholder geometry; Ally and Enemy Dragon variants share one nested Dragon prefab.
+- Created seven concrete prefab variants from the correct Ally/Enemy bases, each with one compatible executor, its definition, nested visual, inherited gameplay collider, required socket, and immediate explicit death-to-pool requester.
+- Bound Classic Range to Bullet delivery at `MuzzleSocket`, both Dragons to Fireball delivery at the shared `MouthSocket`, and DoubleHead to Ally melee rules with a visible `WristAttackSocket`.
+- Extended `AIUnitBrain` runtime-service binding to configure either its single melee executor or its single projectile executor without changing the shared `AttackController`.
+- Registered every concrete unit in `UC_CombatSandbox` and `PC_ProjectilePools` with Expandable policy and the exact regular-unit `10/100` prewarm/retention baseline.
+- Added `RegularUnitSandboxScenarioController` plus four dedicated Ally and three dedicated Enemy spawn points, giving every concrete unit one direct saved-scene spawn path.
+- Added idempotent Unity Editor automation for definitions, nested visuals, variants, catalogs, and scene wiring, plus nine Edit Mode tests covering all repeated-family requirements.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final Step 12 source batch; Tundra succeeded at `Editor.log` line 34134 and assemblies reloaded successfully. | Pass |
+| Compiler/assembly diagnostics | The final compile/test segment contains 0 current C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | A final idempotent Editor pass recreated/updated and verified all definitions, nested visuals, concrete variants, catalogs, and sandbox spawn wiring at `Editor.log` line 33783. | Pass |
+| Edit Mode suite | 250 total, 250 passed, 0 failed, 0 skipped, 0 inconclusive at `2026-08-09T14:31:59Z`. This includes 9 Step 12 cases and all 241 earlier cases. | Pass |
+| Family delivery and sockets | Asset tests assert melee closure data, Bullet delivery at both Muzzle sockets, shared Dragon visual/Fireball delivery at both Mouth sockets, and Ally DoubleHead melee with its wrist socket. | Pass |
+| Faction behavior | Both shared Ally/Enemy families load matching faction definitions and continue to use the centralized hostility matrix; same-faction pairs are non-hostile and cross-faction pairs are hostile. | Pass |
+| Actual seven-unit combat | All seven production units moved, attacked, took damage, or completed a combat return in the saved sandbox; Bullet and Fireball pools each reached peak active count `2` at `Editor.log` line 33349. | Pass |
+| Actual pool reuse | Every concrete unit died/returned and reused its same pooled object with a new spawn ID, exact full health, valid NavMesh placement, no stale path/target, Disabled pre-decision AI state, and rebound delivery services at `Editor.log` lines 33362-33440. | Pass |
+| Scope audit | `SampleScene`, Build Settings, packages, layers, input assets, design documents, and design checkboxes are unchanged; no third-party or paid asset was introduced. | Pass |
+
+The definitive suite ran after the final runtime guard and after the temporary automatic live verifier was removed. The live gate used the production scene services, actual NavMesh agents, actual projectile pools, interaction/damage path, and each concrete unit pool, then exited without saving runtime state.
+
+### Explicit Structural Choices
+
+- The documents specify silhouettes, reusable visuals, and socket intent but no numeric art/collider table. The regular variants therefore inherit the already-verified common gameplay collider unchanged; Unity-native shapes and their local positions are explicitly placeholder presentation geometry, not final art or balance.
+- The saved scenario positions are deterministic test layout coordinates chosen only to place opposing groups within their authored chase ranges. They do not alter any definition, range, speed, damage, or timing value.
+- Classic Melee reuses one nested visual across factions, Classic Range reuses one nested weapon-bearing visual across factions, and Dragon reuses one visual plus MouthSocket exactly as required. Faction and damage rules remain outside visual prefabs.
+- `ImmediateDeathPoolReturn` is the existing explicit lifecycle requester used by the sandbox until presentation-driven death completion exists. Health and lifecycle controllers remain unaware of pooling.
+- Ranged runtime services are injected after spawn. Prefab assets retain their socket references but do not serialize scene-level managers or interaction services.

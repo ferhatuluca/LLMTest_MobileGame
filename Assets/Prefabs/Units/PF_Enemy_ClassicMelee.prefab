@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1736690638881546488
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 846446049102214148}
+    m_Modifications:
+    - target: {fileID: 2860956299158034368, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_Name
+      value: PF_Visual_ClassicMelee
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+--- !u!4 &4967789036767089100 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6694837385786749236, guid: b928d6c14dbd903478871dc8d22a65ff, type: 3}
+  m_PrefabInstance: {fileID: 1736690638881546488}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8316131649583399518
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: <AttackDefinition>k__BackingField
+      value: 
+      objectReference: {fileID: 11400000, guid: 704f90acd7ee52e4fb5c6818555903d7, type: 2}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
+      value: 
+      objectReference: {fileID: 8935677736927053221}
+    - target: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_Name
+      value: PF_Enemy_ClassicMelee
+      objectReference: {fileID: 0}
+    - target: {fileID: 7780148834478849021, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: <Definition>k__BackingField
+      value: 
+      objectReference: {fileID: 11400000, guid: fba244a415424344e951cea4b5737b14, type: 2}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8707705063797716570, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4967789036767089100}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8935677736927053221}
+    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8193638265176293509}
+  m_SourcePrefab: {fileID: 100100000, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+--- !u!4 &846446049102214148 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8707705063797716570, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+  m_PrefabInstance: {fileID: 8316131649583399518}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2421031457194681681 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+  m_PrefabInstance: {fileID: 8316131649583399518}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8935677736927053221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2421031457194681681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc8f3abf433d8de4a8e964a7301a6f07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.MeleeAttackExecutor
+  <InteractionSystem>k__BackingField: {fileID: 0}
+--- !u!114 &8193638265176293509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2421031457194681681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn
