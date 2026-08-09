@@ -69,3 +69,19 @@ MonoBehaviour:
     <CapacityPolicy>k__BackingField: 0
     <MaximumActiveCount>k__BackingField: 0
     <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: TestAIAlly
+    <Prefab>k__BackingField: {fileID: 1639156146291830764, guid: 9a1d91309cb56104e817de888f119ef7, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: TestAIEnemy
+    <Prefab>k__BackingField: {fileID: 6993865814988457084, guid: 2e868c9a020974345a06df12e4c90038, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1

@@ -11,4 +11,9 @@ namespace MonstersVsZombies.Units.Movement
         void Stop();
         void Resume();
     }
+
+    public interface IDestinationRefreshPolicy
+    {
+        float DestinationRefreshDistance { get; }
+    }
 }

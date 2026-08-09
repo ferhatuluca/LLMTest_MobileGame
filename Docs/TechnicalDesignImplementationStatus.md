@@ -473,7 +473,7 @@ The definitive Edit Mode suite ran through the project-local verification comman
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 10 completed: add Player movement weapons and prefab`
-**Next step:** Step 11 has not been started.
+**Next step:** Step 11 is complete; Step 12 has not been started.
 
 ### Implemented
 
@@ -517,3 +517,46 @@ The definitive suite ran after the final source batch through the project-local 
 - The health/current-weapon labels and simple weapon meshes are implementation placeholders built with project-native Unity components. They introduce no unapproved art package or balance value.
 - The common unit prefab places both its `Hurtbox` and `AttackOrigin` at `0.5 m`, matching the common hurtbox radius. This clears the World-layer ground for swept projectile casts and provides an aligned target center; it is prefab geometry, not a combat balance value.
 - Attack execution snapshots that selected hurtbox center at impact time. GrenadeGun chooses the mathematical low arc that reaches the snapshot using its authored speed and current Unity gravity, adding no launch-angle tuning value.
+
+## Step 11 - NavMesh AI Bases and Core Behavior
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 11 completed: add NavMesh AI bases and behavior`
+**Next step:** Step 12 has not been started.
+
+### Implemented
+
+- Added `NavMeshUnitMotor` as the sole `NavMeshAgent` owner, including activation-dependent `Warp`, destination/path ownership, stop/reset behavior, spawn-derived avoidance priority, and pooled-state cleanup.
+- Added `AIUnitBrain` with explicit Disabled, Idle, Chase, and Attack states; shared targeting/range rules; throttled destination refresh; executor-driven melee attacks; and immediate stun/death/return blocking.
+- Extended the unit motor contract with a read-only destination-refresh policy while preserving the common movement, facing, stop, and resume boundary.
+- Added faction-definition validation and selection-only Ally/Enemy debug coloring without introducing combat or balance differences between the faction bases.
+- Added `PF_Unit_AI_Base`, `PF_Unit_Ally_Base`, and `PF_Unit_Enemy_Base` prefab variants through Unity Editor automation, preserving the common-unit capability hierarchy.
+- Added thin test-only Ally and Enemy fixtures, matching AI definitions, one Classic Melee attack, regular-unit pool entries, and unit-catalog membership under `Assets/Tests/Fixtures/StepEleven`.
+- Added `AISandboxScenarioController` and updated `CombatSandbox` through Unity Editor automation to spawn and configure one live Ally and Enemy alongside the Player and stationary Enemy.
+- Enabled `CombatSandbox` in Build Settings through `EditorBuildSettings` APIs while preserving `SampleScene` as the first enabled scene.
+- Added Edit Mode coverage for prefab inheritance/capabilities, exact authored fixtures, catalog registration, scene/build configuration, faction mismatch rejection, state transitions, destination throttling, stun, death, return, and path/target reset.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final Step 11 code shape; Tundra succeeded at `Editor.log` line 31311 and the assembly reload completed. | Pass |
+| Compiler/assembly diagnostics | The final compile/test log segment contains 0 current C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | The rerunnable Step 11 Editor command created, updated, reloaded, and verified the AI prefab branches, fixtures, catalogs, scene wiring, and Build Settings at `Editor.log` line 30258. | Pass |
+| Edit Mode suite | 241 total, 241 passed, 0 failed, 0 skipped, 0 inconclusive at `2026-08-09T14:09:25Z`. This includes 10 Step 11 cases and all 231 earlier cases. | Pass |
+| State and action gating | Programmatic behavior tests cover Disabled/Idle/Chase/Attack transitions, destination refresh throttling, shorter/longer target movement, stun blocking, deterministic recovery, death, and return. | Pass |
+| Actual NavMesh movement and combat | In the saved scene, both AI agents moved from their initial positions into Attack state, each issued 12 destination commands, and hostile combat reduced stationary Enemy health from 60 to 50 at `Editor.log` line 31153. | Pass |
+| Actual pooled respawn | The live Ally died and reused the same pooled object with spawn ID `3` replaced by `5`, full health `60`, a valid NavMesh placement, no stale path, and Disabled pre-decision AI state at `Editor.log` line 31167. | Pass |
+| Build and scene scope | Build Settings keep `SampleScene` first and add enabled `CombatSandbox`; `SampleScene`, packages, layers, input assets, design documents, and design checkboxes remain unchanged. | Pass |
+
+The definitive suite ran after removal of the temporary automatic live-check hook. The live check used the saved `CombatSandbox`, its baked NavMesh, production spawn/pool services, production targeting and melee delivery, and then exited Play Mode without saving runtime state.
+
+### Explicit Structural Choices
+
+- The shared NavMesh agent radius `0.5 m` and height `2 m` match the common capsule/hurtbox geometry. The agent stopping distance is derived from authored attack range minus agent radius, so no new combat distance was invented.
+- Destination refresh timing reuses the authored targeting scan interval. Meaningful target movement uses the agent radius; neither value adds an independent balance knob.
+- Avoidance priority is the full legal `0..99` range derived deterministically from the current spawn ID, producing stable variation without authored per-prefab values.
+- `Warp` happens only during activation-dependent pooled initialization. Pool return resets the path, destination bookkeeping, services, target, and AI state before reuse.
+- The Step 11 melee and unit numbers exactly follow the temporary Classic Melee and regular-unit baselines in the implementation design. The concrete fixtures remain test-only; Step 12 production Zombie archetypes have not been introduced early.
+- Ally and Enemy base variants differ only by expected faction metadata and selection-time debug color. Target hostility continues to come from the centralized faction rules.

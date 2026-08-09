@@ -170,6 +170,11 @@ namespace MonstersVsZombies.Units
             return true;
         }
 
+        internal void ClearCurrentTarget()
+        {
+            ClearTarget();
+        }
+
         public bool PrepareForSpawn()
         {
             CacheSiblingComponents();
