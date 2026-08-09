@@ -1,4 +1,5 @@
 using MonstersVsZombies.Core;
+using MonstersVsZombies.Combat.Interaction;
 
 namespace MonstersVsZombies.Spawning
 {
@@ -23,5 +24,12 @@ namespace MonstersVsZombies.Spawning
     {
         bool ConfigureProjectileSpawn(ProjectileSpawnRequest spawnRequest);
         bool StartProjectile();
+    }
+
+    public interface IProjectileSpawnRuntimeContextReceiver
+    {
+        bool ConfigureProjectileRuntime(
+            SpawnManager spawnManager,
+            InteractionSystem interactionSystem);
     }
 }

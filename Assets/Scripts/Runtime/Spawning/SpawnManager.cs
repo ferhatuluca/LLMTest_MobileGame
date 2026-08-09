@@ -3,6 +3,7 @@ using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Units;
+using MonstersVsZombies.Combat.Interaction;
 using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
@@ -170,6 +171,13 @@ namespace MonstersVsZombies.Spawning
         public SpawnResult<PooledEntity> SpawnProjectile(
             ProjectileSpawnRequest spawnRequest)
         {
+            return SpawnProjectile(spawnRequest, null);
+        }
+
+        public SpawnResult<PooledEntity> SpawnProjectile(
+            ProjectileSpawnRequest spawnRequest,
+            InteractionSystem interactionSystem)
+        {
             if (!IsInitialized)
             {
                 return SpawnResult<PooledEntity>.CreateFailure(
@@ -204,6 +212,9 @@ namespace MonstersVsZombies.Spawning
             IProjectileSpawnLifecycle projectileLifecycle =
                 FindProjectileLifecycle(pooledEntity);
             if (projectileLifecycle == null ||
+                !ConfigureProjectileRuntime(
+                    projectileLifecycle,
+                    interactionSystem) ||
                 !projectileLifecycle.ConfigureProjectileSpawn(spawnRequest) ||
                 !pooledEntity.PrepareForSpawn())
             {
@@ -292,6 +303,18 @@ namespace MonstersVsZombies.Spawning
             }
 
             return matchingLifecycle;
+        }
+
+        private bool ConfigureProjectileRuntime(
+            IProjectileSpawnLifecycle projectileLifecycle,
+            InteractionSystem interactionSystem)
+        {
+            if (!(projectileLifecycle is IProjectileSpawnRuntimeContextReceiver receiver))
+            {
+                return true;
+            }
+
+            return receiver.ConfigureProjectileRuntime(this, interactionSystem);
         }
 
         private void HandleUnitPoolReturnRequested(UnitPoolReturnRequest returnRequest)

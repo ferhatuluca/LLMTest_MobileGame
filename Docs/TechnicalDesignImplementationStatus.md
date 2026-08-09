@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 through 7 are complete; Step 8 has not been started.
+**Next step:** Steps 1 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Steps 2 through 7 are complete; Step 8 has not been started.
+**Next step:** Steps 2 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Steps 3 through 7 are complete; Step 8 has not been started.
+**Next step:** Steps 3 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -142,7 +142,7 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 3 completed: add core unit components`
-**Next step:** Steps 4 through 7 are complete; Step 8 has not been started.
+**Next step:** Steps 4 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -187,7 +187,7 @@ The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchr
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 4 completed: add unit registration and interaction`
-**Next step:** Steps 5 through 7 are complete; Step 8 has not been started.
+**Next step:** Steps 5 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -233,7 +233,7 @@ The final suite ran through the project-local verification command in the verifi
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 5 completed: add pooled entity and pool manager`
-**Next step:** Steps 6 and 7 are complete; Step 8 has not been started.
+**Next step:** Steps 6 through 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -279,7 +279,7 @@ The definitive suite ran through the project-local verification command in the v
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 6 completed: add spawn orchestration and requests`
-**Next step:** Step 7 is complete; Step 8 has not been started.
+**Next step:** Steps 7 and 8 are complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -329,7 +329,7 @@ The definitive suite ran through the project-local verification command in the v
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 7 completed: add targeting and attack timing`
-**Next step:** Step 8 has not been started.
+**Next step:** Step 8 is complete; Step 9 has not been started.
 
 ### Implemented
 
@@ -371,3 +371,54 @@ The definitive suite ran through the project-local verification command in the v
 - Attack sequences restart their local sequence counter after pool reset, while the composite source `SpawnId` makes the resulting `AttackKey` unique across spawns.
 - Cooldown advances while an active unit is stunned, but a stun cancels any current windup and does not refund the already committed cooldown.
 - A melee target that leaves attack range at impact produces no executor call and enters recovery. Actual melee, projectile, grenade, and hitscan delivery behavior remains Step 8 scope.
+
+## Step 8 - Attack Delivery and Projectile Systems
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 8 completed: add attack delivery and projectiles`
+**Next step:** Step 9 has not been started.
+
+### Implemented
+
+- Added `AttackPayloadFactory` so every delivery snapshots the source spawn ID, faction, attack sequence, damage, damage category, and optional accepted-hit effect from one immutable attack context.
+- Added `MeleeAttackExecutor`, with target-specific hit position/normal diagnostics and all damage routed through the existing `InteractionSystem` and current attack ledger.
+- Added `ProjectileController` as the common pooled projectile lifecycle, captured-request owner, timer, reusable per-projectile ledger, interaction boundary, termination event, and return-to-`SpawnManager` path.
+- Added `KinematicProjectileMovement` for bullet/fireball swept-sphere motion against only `World` and `UnitTarget`, including nearest relevant contact selection, explicit trigger inclusion, saturation diagnostics, lifetime expiry, and pool return.
+- Added `ProjectileAttackExecutor` and `GrenadeAttackExecutor`, both spawning only through `SpawnManager` with an explicitly supplied `InteractionSystem` runtime context.
+- Added `GrenadeProjectileMovement` with Rigidbody launch/reset, authored gravity scale, fuse timing, classified World collision, classified hostile trigger contact, non-allocating area resolution, spawn-ID hurtbox deduplication, and one shared explosion ledger.
+- Added `HitscanAttackExecutor` with non-allocating first-relevant-hit selection, World obstruction, captured-payload interaction, source/friendly/inactive/dead filtering, and a pooled beam placeholder.
+- Added `LaserBeamPresentationController` with inactive configuration, pooled setup, authored `0.12 s` lifetime, visual span placement, expiry, and return.
+- Extended `SpawnManager` with an overload that supplies explicit runtime projectile services before inactive configuration while preserving the Step 6 request-only overload and test lifecycle seam.
+- Added Unity Editor automation that idempotently creates or updates Bullet, Fireball, Grenade, and LaserBeam prefabs; three projectile definitions; five attack definitions; and four Expandable pool entries while preserving later catalog entries.
+- Used the exact temporary sandbox speeds, radii, lifetimes/fuse, explosion radius, damage/range/timing values, and prewarm/retention baselines from the design table.
+- Added Edit Mode delivery, pooling, physics-policy, captured-source, concrete-asset, and asset-tuning tests.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final code batch; the Tundra build succeeded in `Editor.log` at line 11558 and completed its assembly reload. | Pass |
+| Compiler/assembly diagnostics | The final log segment from line 11558 contains 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or assembly-resolution failures. | Pass |
+| Unity asset automation | The rerunnable Step 8 Editor command created/updated and verified all definitions, prefabs, and pool entries at `Editor.log` line 11686 without hand-authored YAML or GUIDs. | Pass |
+| Edit Mode suite | 212 total, 212 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 25 Step 8 cases and all 187 earlier cases. | Pass |
+| Melee and direct projectiles | Melee applies once at impact; Bullet and Fireball hostile hits, expiry, pool return, source overlap, friendly pass-through, and World obstruction are asserted. | Pass |
+| Grenade behavior | Rigidbody velocity reset, source/friendly trigger ignore, hostile trigger detonation, World collision, fuse expiry, area damage, and multiple-hurtbox deduplication are asserted. | Pass |
+| Hitscan and beam | Friendly pass-through, first-hostile-only resolution, World obstruction, single interaction, beam rent/configuration, and timed beam return are asserted. | Pass |
+| Captured source state | Tests prove in-flight damage remains valid after source death and after the source object receives a new spawn ID and faction, without reading that object's new state. | Pass |
+| Friendly-fire matrix | Melee and Hitscan reject friendly impact; Bullet and Fireball ignore friendly hurtboxes without consumption; Grenade area/contact rules ignore friendlies. | Pass |
+| Authored asset data | All projectile, attack, and pool values are loaded back through `AssetDatabase` and compared with the temporary sandbox table; required pooled component structures are inspected. | Pass |
+| Scope audit | No scene, unit prefab, input asset, package, or design-document checkbox was changed. | Pass |
+
+The definitive suite ran after a second successful idempotent asset-automation pass in the verified correct target Editor. `Logs/ImplementationEditModeSummary.txt` supplied the totals, and the final Unity log segment was scanned for compiler, assembly, unhandled-exception, and assertion diagnostics.
+
+### Explicit Structural Choices
+
+- A successful Projectile or Grenade executor returns the default `InteractionResult` (`None`) because firing has not yet produced a target interaction. The pooled delivery publishes its real applied/rejected result only at impact through `InteractionSystem`; immediate spawn failure returns `InvalidPayload`.
+- Projectile runtime services are passed explicitly by the executor through a `SpawnManager` overload. They are not serialized into reusable prefab assets and are cleared on pool return.
+- Fixed non-allocating safeguards are explicit implementation capacities rather than combat tuning: Bullet/Fireball sweeps and Hitscan casts hold 32 contacts; Grenade area queries hold 64 colliders. Each system exposes saturation for diagnostics.
+- Exact-distance collision ties prefer World over a hostile target, ensuring an obstruction is never bypassed by nondeterministic physics-hit ordering.
+- Source, friendly, inactive, and dead contacts are ignored. An active/alive hostile remains a consuming direct contact even if `InteractionSystem` later rejects damage for invulnerability.
+- Grenade Rigidbody velocity and angular velocity are cleared both before a spawn and during pool return. Authored gravity scale `1` uses Unity gravity directly; non-unit values remain definition-owned.
+- Beam-presentation pool failure does not roll back an already resolved Hitscan interaction. The placeholder uses a non-gameplay `0.04` visual thickness and the authored `0.12 s` lifetime.
+- The Step 8 catalog automation replaces its own four entries on rerun but preserves entries owned by later steps, so future unit/effect pools are not erased.
