@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 through 3 are complete; Step 4 has not been started.
+**Next step:** Steps 1 through 4 are complete; Step 5 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Steps 2 and 3 are complete; Step 4 has not been started.
+**Next step:** Steps 2 through 4 are complete; Step 5 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Step 3 is complete; Step 4 has not been started.
+**Next step:** Steps 3 and 4 are complete; Step 5 has not been started.
 
 ### Implemented
 
@@ -142,7 +142,7 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 3 completed: add core unit components`
-**Next step:** Step 4 has not been started.
+**Next step:** Step 4 is complete; Step 5 has not been started.
 
 ### Implemented
 
@@ -181,3 +181,49 @@ The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchr
 - `IUnitMotor.MoveTo` and `FaceTowards` use world positions. This resolves the unspecified signature in a form that both direct Player movement and later NavMesh destination movement can implement without weakening stop/resume semantics.
 - A return requested during Dying is published through `PoolReturnRequested` only after lifecycle callbacks finish, before any future `PoolManager` begins its synchronous `IPoolable.PrepareForReturn` sequence. Return requests during logical activation finalization are rejected so activation cannot report success for an already-returned unit.
 - Logical `Despawned` publishes when a unit becomes non-participating at Dying or PoolReturn; the later physical return exposes PoolReturn and Inactive state transitions without publishing a second logical despawn.
+
+## Step 4 - Unit Registration and Interaction
+
+**Status:** Complete
+**Completed:** 2026-08-08
+**Commit summary:** `Step 4 completed: add unit registration and interaction`
+**Next step:** Step 5 has not been started.
+
+### Implemented
+
+- Added `UnitRegistry` with active-spawn registration, expected-unit removal, spawn-ID lookup, faction counts, immutable event snapshots, and deterministic snapshot copies.
+- Wired registry removal to logical `Despawned`, so an entry is removed once while its old identity is still available and before pooled reuse can assign a new spawn.
+- Added `DamageTargetProxy` to cache a hurtbox collider's owning `UnitController` and `DamageController` while exposing the owner's current pooled spawn identity.
+- Added reusable delivery-owned `AttackHitLedger` storage keyed by composite `AttackKey`; reset clears bounded per-delivery history and no scene service retains completed attacks.
+- Added `InteractionSystem` validation for payload/ledger, current target identity, self-hit, faction, alive/active state, invulnerability, and duplicate-hit rejection before dispatching only to `DamageController`.
+- Kept impact legality independent of a live or registered source object by using only the captured source spawn ID and faction in `DamagePayload`.
+- Added fixed-capacity `TargetQueryBuffer` and `AreaQueryBuffer` implementations that query the configured `UnitTarget` layer with trigger collision enabled, filter current hostile active/alive targets, deduplicate by current spawn ID, and report conservative saturation.
+- Added deterministic nearest-candidate comparison with the lowest valid spawn ID winning exact equal-distance ties.
+- Added a project-local Editor verification command that runs the Edit Mode test assembly synchronously and writes auditable totals under `Logs` when MCP test routing is unavailable.
+- Added programmatic Edit Mode fixtures for registry lifecycle, all faction interactions, duplicate/reused attack identity, captured in-flight payloads, inactive/dead/pooled targets, reentrant damage callbacks, hurtbox caching, non-allocating query reuse, and tie handling.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the target project; the final live-Editor Tundra build succeeded in `Editor.log` at line 1324 and completed its domain reload. | Pass |
+| Compiler/assembly diagnostics | The final code-batch log contains 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, or NUnit assertion exceptions. | Pass |
+| Edit Mode suite | 125 total, 125 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 42 Step 4 cases and all 83 earlier cases. | Pass |
+| Registry lifecycle | Active-only registration, duplicate rejection, lookup/count accuracy, immutable event identity, death/return removal once, respawn with a new identity/faction, stale-ID protection, and sorted snapshot isolation are covered. | Pass |
+| Interaction legality | All nine faction combinations pass through `InteractionSystem`; self, invalid, inactive, dead/Dying, pooled, invulnerable, and duplicate outcomes are asserted with no illegal health mutation. | Pass |
+| Attack identity and reuse | Same-target duplicate rejection, multiple targets under one key, later sequence reuse, same sequence under a new source spawn, separate ledgers, reset, and reentrant duplicate prevention are covered. | Pass |
+| Captured impact source | Tests prove a captured payload remains valid after source unregister, after source-object reuse with another faction, and without any source registration. | Pass |
+| Query/proxy behavior | Cached owner references, current pooled identity, exact physics layer, explicit trigger inclusion, faction/state filtering, multiple-hurtbox deduplication, saturation, reuse without stale candidates, and independent target/area buffers are covered. | Pass |
+| Deterministic tie | Exact equal distances choose the lower valid spawn ID; closer candidates still win and invalid distances are rejected. | Pass |
+| Independent review | Two read-only semantic audits passed after the hurtbox owner-cache Awake-order regression was closed. | Pass |
+| Scope audit | No scene, prefab, ScriptableObject asset, input asset, balance value, package, or design-document checkbox was changed. | Pass |
+
+The final suite ran through the project-local verification command in the verified correct target Editor after Unity generated metadata for the new scripts. `Logs/ImplementationEditModeSummary.txt` supplied the totals, and the final Unity log was scanned for compiler, assembly, unhandled-exception, and assertion diagnostics.
+
+### Explicit Structural Choices
+
+- Rejection precedence is invalid payload/ledger, invalid current target identity, self-hit, invalid faction, dead, inactive, invulnerable, duplicate, then applied. A configured but inactive unit reports `TargetInactive`, Dying reports `TargetDead`, and a returned identity-cleared unit reports `InvalidTarget`.
+- Registry and faction snapshots are sorted by ascending spawn ID. Exact equal-distance target ties also select the lower valid spawn ID; the design requires determinism but does not prescribe the direction.
+- Query capacities remain constructor inputs owned by later targeting/delivery systems. Step 4 introduces no production capacity or warning-throttle balance value.
+- The ledger reserves a target immediately before damage dispatch to block a reentrant copy of the same hit. If the downstream damage boundary unexpectedly rejects the dispatch, that reservation is removed so only accepted hits remain recorded.
+- Filling a non-allocating physics buffer sets `WasSaturated` conservatively because Unity cannot distinguish an exactly full result from omitted overflow without allocating or issuing another query.
