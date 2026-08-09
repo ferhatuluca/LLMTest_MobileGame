@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 through 5 are complete; Step 6 has not been started.
+**Next step:** Steps 1 through 6 are complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Steps 2 through 5 are complete; Step 6 has not been started.
+**Next step:** Steps 2 through 6 are complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Steps 3 through 5 are complete; Step 6 has not been started.
+**Next step:** Steps 3 through 6 are complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -142,7 +142,7 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 3 completed: add core unit components`
-**Next step:** Steps 4 and 5 are complete; Step 6 has not been started.
+**Next step:** Steps 4 through 6 are complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -187,7 +187,7 @@ The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchr
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 4 completed: add unit registration and interaction`
-**Next step:** Step 5 is complete; Step 6 has not been started.
+**Next step:** Steps 5 and 6 are complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -233,7 +233,7 @@ The final suite ran through the project-local verification command in the verifi
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 5 completed: add pooled entity and pool manager`
-**Next step:** Step 6 has not been started.
+**Next step:** Step 6 is complete; Step 7 has not been started.
 
 ### Implemented
 
@@ -273,3 +273,53 @@ The definitive suite ran through the project-local verification command in the v
 - Callback aggregation follows Unity's stable hierarchy/component enumeration and excludes any component whose nearest `PooledEntity` is a nested root. No callback priority system or component-specific reset order was invented.
 - Unknown-pool rent failures increment `PoolManager.UnknownPoolFailedRentCount` and the manager total because there is no valid pool record to own that failure; known-pool failures remain in their per-pool diagnostics.
 - The test fixture assembly is runtime-compatible but not auto-referenced. The Edit Mode test assembly references it explicitly, allowing programmatic `MonoBehaviour` fixtures while keeping them outside production runtime assemblies and assets.
+
+## Step 6 - SpawnManager and Spawn Requests
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 6 completed: add spawn orchestration and requests`
+**Next step:** Step 7 has not been started.
+
+### Implemented
+
+- Added immutable `UnitSpawnRequest` and `ProjectileSpawnRequest` values with validated definitions, payloads, finite poses, optional source unit identity, and explicit spawn reasons.
+- Added `UnitSpawnContext` plus root-level unit-context and projectile-lifecycle extension contracts so later features can receive per-spawn metadata without expanding `UnitController` or introducing projectile movement early.
+- Added `SpawnManager` as the only request-to-live-instance path. It resolves the definition's stable pool ID through `PoolManager` and never instantiates an unpooled fallback.
+- Added monotonically increasing unit `SpawnId` assignment; a rented spawn attempt consumes its identity even if a later phase fails, so an identity is never reused.
+- Applied resolved pose, definition, faction, spawn ID, reason, optional source identity, and projectile payload while the pooled root is inactive.
+- Ran activation-independent pooled reset while inactive, activated the GameObject, ran activation-dependent setup, then performed logical unit activation/registration or projectile start.
+- Returned failed partial unit and projectile spawns through `PoolManager` without registry membership or projectile start.
+- Connected lifecycle pool-return requests back to `SpawnManager`, preserving registry removal and generic pool cleanup.
+- Added deterministic indexed and repeatable round-robin `SpawnPointGroup` selection with explicit reset and controlled invalid-point results.
+- Added optional `ISpawnPositionValidator` orchestration and a `NavMeshSpawnPositionValidator` that requires caller-supplied sample distance and area mask instead of inventing scene values.
+- Added `InitialSandboxSpawner`, `DebugUnitSpawner`, and an explicit source-identified death-spawn method without automatic `Start`, UI, input, concrete definition, or death-effect wiring.
+- Added runtime-compatible programmatic unit and projectile probes under `Assets/Tests/Fixtures`; no production hierarchy, prefab, definition asset, or scene object was created.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the target project; the final Tundra build succeeded in `Editor.log` at line 6714 and assemblies reloaded at line 6726. | Pass |
+| Compiler/assembly diagnostics | The final code-batch scan after line 6714 found 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, or NUnit assertion exceptions. | Pass |
+| Edit Mode suite | 163 total, 163 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 22 Step 6 cases and all 141 earlier cases. | Pass |
+| Pool selection and failures | Definition-owned pool selection, missing definitions, invalid poses, unknown pools, invalid projectile payloads, missing projectile lifecycle, and both activation-phase failures are covered. | Pass |
+| Unit spawn order | Tests prove pose, definition, faction, spawn ID, reason, and source identity are assigned inactive; activation-dependent setup observes an active GameObject while the unit is logically inactive and absent from the registry. | Pass |
+| Projectile spawn order | Tests prove captured payload/configuration and reset occur inactive, activation-dependent setup observes active/not-started state, and start occurs only afterward. Start failure returns the object inactive. | Pass |
+| Registry and return | Successful spawn adds exactly one faction entry; explicit return and lifecycle-requested return remove it and deactivate the pooled instance. | Pass |
+| Reuse identity | A returned instance is reused from the same pool with a strictly newer spawn ID, updated pose, clean context, and no stale registration. | Pass |
+| Position validation | Rejection happens before rent; an accepted resolved position is applied before context/setup; NavMesh validation requires explicit sampling configuration. | Pass |
+| Spawn points | Indexed selection follows authored order; round-robin cycles deterministically and reset restarts at the first point. | Pass |
+| Entry points | Initial, Debug, and source-identified DeathEffect request reasons are asserted without UI or concrete-unit wiring. | Pass |
+| Scope audit | `SpawnManager` contains no instantiate fallback. No scene, production prefab, ScriptableObject asset, input asset, balance value, package, or design-document checkbox was changed. | Pass |
+
+The definitive suite ran through the project-local verification command in the verified correct target Editor. `Logs/ImplementationEditModeSummary.txt` supplied the final totals, and the final Unity log segment was scanned for compiler, assembly, unhandled-exception, and assertion diagnostics.
+
+### Explicit Structural Choices
+
+- Existing `SpawnFailureReason` values are reused: missing manager readiness maps to `RentFailed`, invalid request metadata maps to `InvalidDefinition`, phase/context failures map to their activation-independent or activation-dependent values, and pool unknown/capacity failures retain their specific values.
+- `IUnitSpawnContextReceiver` delivers reason and optional source identity to interested root modules while inactive. `UnitController` remains limited to definition, faction, generated spawn identity, activity, and cached capabilities.
+- `IProjectileSpawnLifecycle` is only the Step 6 orchestration seam for inactive request capture and final start. Step 8 still owns the common projectile controller, movement, collision, damage, lifetime, and return behavior.
+- Optional position validation is selected explicitly through the `SpawnManager` overload. `NavMeshSpawnPositionValidator` accepts caller-supplied sample distance and area mask; Step 6 introduces no sampling radius, area, or other balance default. Final `NavMeshAgent.Warp` and on-NavMesh confirmation remain activation-dependent responsibilities for Step 11.
+- Spawn context and projectile lifecycle receivers are required on the pooled root. The documented production prefab hierarchy places lifecycle/combat capabilities on that root, and nested pooled roots remain independent.
+- Initial and Debug entry-point components are manual request adapters only. Automatic initial spawning, input/UI commands, concrete unit references, and `SpawnUnitsOnDeath` behavior remain assigned to their later numbered steps.
