@@ -141,6 +141,27 @@ namespace MonstersVsZombies.Core.Bootstrap
             return true;
         }
 
+        public bool ResetPlayer()
+        {
+            if (!IsInitialized || SpawnManager == null)
+            {
+                LastFailureMessage =
+                    "The Player can only be reset after sandbox initialization.";
+                return false;
+            }
+
+            PlayerHudController?.Unbind();
+            CameraFollowController?.Clear();
+            if (InitialPlayer != null)
+            {
+                SpawnManager.ReturnUnit(InitialPlayer);
+                InitialPlayer = null;
+            }
+
+            PlayerSpawnPoints.ResetRoundRobin();
+            return SpawnInitialPlayer();
+        }
+
         public bool SpawnStationaryEnemyTarget()
         {
             if (!IsInitialized || !EnemySpawnPoints.TryGetNext(out Pose spawnPose))

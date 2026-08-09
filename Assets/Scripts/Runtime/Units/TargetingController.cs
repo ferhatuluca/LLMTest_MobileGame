@@ -4,6 +4,7 @@ using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
+using MonstersVsZombies.Diagnostics;
 using UnityEngine;
 
 namespace MonstersVsZombies.Units
@@ -46,6 +47,7 @@ namespace MonstersVsZombies.Units
         private float _scanTimeRemaining;
         private float _queryRange;
         private bool _isPreparedForSpawn;
+        private bool _hasReportedSaturatedQuery;
 
         [field: SerializeField] public int QueryCapacity { get; private set; }
         [field: SerializeField] public float ScanInterval { get; private set; }
@@ -183,6 +185,7 @@ namespace MonstersVsZombies.Units
             ClearTarget();
             _scanTimeRemaining = _initialScanDelay;
             _isPreparedForSpawn = false;
+            _hasReportedSaturatedQuery = false;
             Mode = TargetingMode.Disabled;
             _queryRange = 0f;
 
@@ -220,6 +223,7 @@ namespace MonstersVsZombies.Units
             Mode = TargetingMode.Disabled;
             _queryRange = 0f;
             _isPreparedForSpawn = false;
+            _hasReportedSaturatedQuery = false;
         }
 
         internal void AdvanceTime(float deltaTime)
@@ -267,6 +271,16 @@ namespace MonstersVsZombies.Units
                 _queryRange,
                 _unitController.SpawnId,
                 _unitController.Faction);
+
+            if (_queryBuffer.WasSaturated && !_hasReportedSaturatedQuery)
+            {
+                _hasReportedSaturatedQuery = true;
+                SandboxDebugRuntime.Report(
+                    SandboxDiagnosticCode.TargetQueryBufferFull,
+                    $"{name} filled its target-query buffer of {QueryCapacity}; " +
+                    "increase the explicit query capacity if candidates are being omitted.",
+                    this);
+            }
 
             UnitController selectedTarget = null;
             DamageTargetProxy selectedTargetProxy = null;

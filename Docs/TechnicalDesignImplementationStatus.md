@@ -609,7 +609,7 @@ The definitive suite ran after the final runtime guard and after the temporary a
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 13 completed: add Stunner and Divisible enemies`
-**Next step:** Step 14 has not been started.
+**Next step:** Step 14 is complete; Step 15 has not been started.
 
 ### Implemented
 
@@ -647,3 +647,50 @@ The definitive suite ran after the temporary automatic live verifier was removed
 - MiniDivisible uses an explicit one-half placeholder scale for the shared visual, NavMesh agent radius/height, and hurtbox radius. This satisfies the documented smaller form while keeping all dimensions proportional and visibly replaceable when final art/collider specifications exist.
 - Divisible's primary child ring is derived from its NavMesh-agent diameter. Invalid positions retry at half that derived distance and use the agent radius as the NavMesh sampling distance, avoiding an independent tuning value.
 - `SpawnUnitsOnDeath` owns the Divisible return request so death effects finish before pool release. MiniDivisible and Stunner use the existing immediate requester because they have no ordered death effect.
+
+## Step 14 - Developer Controls and Diagnostics
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 14 completed: add developer controls and diagnostics`
+**Next step:** Step 15 has not been started.
+
+### Implemented
+
+- Added a separate `SandboxDebug` Input System action map while preserving the Player map and Q/E weapon ownership: F1 toggles the panel, 1-9 follow the documented concrete-unit order, 0 maps to Enemy MiniDivisible, and Backspace clears non-Player units/projectiles.
+- Expanded `DebugUnitSpawner` into the catalog-driven developer entry point with distinct Ally/Enemy `SpawnPointGroup` routing, normal `SpawnManager` requests, one-or-many spawn operations, post-spawn AI combat-service injection, pooled clear, Player reset, and immutable last-diagnostic evidence.
+- Added `SandboxDebugPanelController` with one Spawn 1 and one Spawn 10 button for each of the ten concrete AI units, pooled clear, Player reset, AI pause/resume, and four independent gizmo toggles.
+- Added live panel readouts for Player health/current weapon; active Player/Ally/Enemy counts; every pool's active, inactive, created, peak-active, failed-rent, capacity-reached, and overflow-destroy counts; last interaction; and last spawn diagnostic failure.
+- Added `SandboxDebugRuntime` as the Editor/development-build availability and AI-decision-pause boundary; release builds disable the input/panel path, and gizmo drawing is compiled only for Editor/development configurations.
+- Added `SandboxGizmoController` with the documented yellow chase ranges, red attack ranges, cyan current-target links, blue Ally identity, magenta Enemy identity, and colored Player/Ally/Enemy spawn-point markers.
+- Added one-per-spawn target-query buffer saturation reporting without changing the fixed-capacity non-allocating query policy.
+- Extended pool diagnostics with sorted snapshots and active-entity snapshots so the panel and clear operation observe and return current pool state without scene discovery or object destruction.
+- Added transactional Player reset through `CombatSandboxBootstrap`: HUD/camera unbind, pooled return, deterministic Player spawn-point reset, new spawn identity, and normal rebinding.
+- Added a rerunnable Unity Editor command that updates the existing input asset, constructs and wires the Game-view panel, connects debug services in `CombatSandbox`, and validates all ten concrete definitions and their catalog-backed prefabs.
+- Added nine focused Edit Mode cases for the exact input bindings and key mappings, scene/panel composition, release guards, Spawn 10, pooled clear, diagnostic codes, complete pool metrics, and AI pause/resume behavior.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final Step 14 runtime, Editor, and verification code; Tundra succeeded at `Editor.log` line 44553 and assemblies reloaded successfully. | Pass |
+| Compiler/assembly diagnostics | The final source batch has 0 current C# errors or warnings; the definitive suite below completed without an unhandled exception, assertion failure, or missing-reference error. | Pass |
+| Unity asset automation | The idempotent Step 14 Editor command recreated/verified the `SandboxDebug` map, panel hierarchy, scene references, and all 10 concrete prefab/catalog pairs at `Editor.log` lines 41333-41352. | Pass |
+| Edit Mode suite | 270 total, 270 passed, 0 failed, 0 skipped, 0 inconclusive at `2026-08-09T15:25:04Z`. The only later source changes expose the already-tested key-mapping query to the Editor verifier and adjust that Editor-only verifier; the resulting assemblies compiled and the live gate passed. | Pass |
+| Documented keys | Asset tests assert the exact F1, digit 1-9, digit 0, and Backspace bindings; mapping tests assert the exact documented unit order, while Q/E remain exclusive to Player previous/next weapon actions. | Pass |
+| Actual Game-view panel | Live F1 input showed the initially hidden panel. `Logs/Step14SandboxPanel.png` captures Player health/weapon, faction counts, last applied interaction, every spawn control, clear/reset/pause controls, gizmo toggles, and all pool metric columns. | Pass |
+| Actual unit controls | The live harness used every documented key mapping and every panel Spawn 1 button to create the expected concrete definition, then verified a panel Spawn 10 request created ten additional units through normal `SpawnManager` calls. | Pass |
+| Actual pooled clear/reset | The live clear synchronously returned every non-Player unit and active projectile through `PoolManager`, leaving one Player; Reset Player returned/reused through the normal lifecycle and produced a distinct valid spawn ID. | Pass |
+| Actual pause/gizmos/diagnostics | The live panel paused and resumed the global AI decision boundary, updated all four gizmo flags, displayed a real Applied interaction, and displayed the complete per-pool diagnostic table. | Pass |
+| Live exit check | `Editor.log` line 44766 records `PASSED` with Panel F1, 10/10 mappings, 10/10 buttons, Spawn 10, pooled clear, new Player identity, AI pause/resume, 4/4 gizmo toggles, and visible diagnostics. | Pass |
+| Scope audit | `SampleScene`, Build Settings, packages, layers, design documents, and design checkboxes are unchanged; no third-party or paid asset was introduced. | Pass |
+
+The live verifier used F1 through the real Input System action path. Unity Editor synthetic digit-key events were not reliable for bitfield keyboard controls, so exact digit bindings/mappings are proven in Edit Mode and the same public mapping-to-spawn path was exercised live for all ten units. Runtime state was not saved after Play Mode.
+
+### Explicit Structural Choices
+
+- Debug availability uses Unity's `Application.isEditor || Debug.isDebugBuild` boundary. The saved objects remain reference-safe in all builds, but release builds never enable debug input/panel behavior; gizmo drawing has no release-build method body.
+- AI pause blocks new targeting time and brain decisions and stops movement without clearing target/state, so resume continues coherently. It does not mutate authored cooldowns or use global `Time.timeScale`.
+- Clear snapshots active pooled entities, preserves active Player roots, and calls `PoolManager.Return` for every other active entity. It neither calls `Destroy` nor bypasses lifecycle cleanup.
+- The panel refreshes only while visible and at a fixed unscaled diagnostics cadence. It does not add a gameplay manager or alter simulation timing.
+- Optional spawn-at-cursor was deliberately deferred because the complete required keyboard, button, Spawn 10, clear/reset, pause, gizmo, and diagnostic controls were prioritized; no required exit condition depends on it.

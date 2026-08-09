@@ -5,6 +5,7 @@ using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
+using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Spawning;
 using MonstersVsZombies.Units.Movement;
 using MonstersVsZombies.Units.Special;
@@ -198,6 +199,12 @@ namespace MonstersVsZombies.Units.AI
                 float.IsInfinity(deltaTime))
             {
                 throw new ArgumentOutOfRangeException(nameof(deltaTime));
+            }
+
+            if (SandboxDebugRuntime.AreAIDecisionsPaused)
+            {
+                _unitMotor?.Stop();
+                return;
             }
 
             _destinationRefreshRemaining = Mathf.Max(

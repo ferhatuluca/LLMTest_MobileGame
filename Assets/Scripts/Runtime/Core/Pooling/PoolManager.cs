@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using MonstersVsZombies.Data;
 using UnityEngine;
@@ -139,6 +140,41 @@ namespace MonstersVsZombies.Core.Pooling
 
             diagnostics = default;
             return false;
+        }
+
+        public int CopyDiagnostics(List<PoolDiagnostics> destination)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            destination.Clear();
+            foreach (RuntimeObjectPool pool in _pools.Values)
+            {
+                destination.Add(pool.GetDiagnostics());
+            }
+
+            destination.Sort((left, right) => string.CompareOrdinal(
+                left.PoolId.Value,
+                right.PoolId.Value));
+            return destination.Count;
+        }
+
+        public int CopyActiveEntities(List<PooledEntity> destination)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            destination.Clear();
+            foreach (RuntimeObjectPool pool in _pools.Values)
+            {
+                pool.CopyActiveEntities(destination);
+            }
+
+            return destination.Count;
         }
 
         private void ClearPools()

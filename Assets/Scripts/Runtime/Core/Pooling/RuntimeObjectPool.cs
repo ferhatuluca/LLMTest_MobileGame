@@ -195,6 +195,22 @@ namespace MonstersVsZombies.Core.Pooling
                 CollectionChecksEnabled);
         }
 
+        public void CopyActiveEntities(List<PooledEntity> destination)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            foreach (PooledEntity entity in _activeEntities)
+            {
+                if (entity != null)
+                {
+                    destination.Add(entity);
+                }
+            }
+        }
+
         public void Clear()
         {
             foreach (PooledEntity entity in _activeEntities)
