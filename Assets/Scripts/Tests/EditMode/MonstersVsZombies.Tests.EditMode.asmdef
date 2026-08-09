@@ -3,7 +3,8 @@
   "rootNamespace": "MonstersVsZombies.Tests.EditMode",
   "references": [
     "MonstersVsZombies.Runtime",
-    "MonstersVsZombies.Tests.Fixtures"
+    "MonstersVsZombies.Tests.Fixtures",
+    "Unity.AI.Navigation"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

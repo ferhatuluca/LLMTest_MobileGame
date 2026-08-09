@@ -26,5 +26,16 @@ namespace MonstersVsZombies.Spawning
                 default,
                 SpawnReason.Initial));
         }
+
+        internal bool Configure(SpawnManager spawnManager)
+        {
+            if (spawnManager == null)
+            {
+                return false;
+            }
+
+            SpawnManager = spawnManager;
+            return true;
+        }
     }
 }

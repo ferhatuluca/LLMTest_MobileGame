@@ -377,7 +377,7 @@ The definitive suite ran through the project-local verification command in the v
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 8 completed: add attack delivery and projectiles`
-**Next step:** Step 9 has not been started.
+**Next step:** Step 9 is complete; Step 10 has not been started.
 
 ### Implemented
 
@@ -422,3 +422,48 @@ The definitive suite ran after a second successful idempotent asset-automation p
 - Grenade Rigidbody velocity and angular velocity are cleared both before a spawn and during pool return. Authored gravity scale `1` uses Unity gravity directly; non-unit values remain definition-owned.
 - Beam-presentation pool failure does not roll back an already resolved Hitscan interaction. The placeholder uses a non-gameplay `0.04` visual thickness and the authored `0.12 s` lifetime.
 - The Step 8 catalog automation replaces its own four entries on rerun but preserves entries owned by later steps, so future unit/effect pools are not erased.
+
+## Step 9 - Common Unit Prefab and Combat Sandbox
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 9 completed: add common unit prefab and sandbox`
+**Next step:** Step 10 has not been started.
+
+### Implemented
+
+- Added `PF_Unit_Base` as the shared unit composition prefab with the required unit, health, damage, status-effect, targeting, attack, lifecycle, and pooled-entity components.
+- Added the `VisualRoot`, `Sockets`, `UIAnchor`, and `Debug` hierarchy, including `Muzzle`, `WeaponGrip`, `CastOrigin`, and `HeadTop` sockets.
+- Added a child `Hurtbox` trigger on the `UnitTarget` layer with `DamageTargetProxy`, plus a non-gameplay root body collider on `UnitBody`.
+- Persisted explicit targeting query capacity and scan scheduling on the prefab and made inactive pooled initialization reconstruct the runtime query buffer before activation.
+- Added a stationary, non-attacking test-only prefab variant and Player definition under `Assets/Tests/Fixtures/StepNine`.
+- Added a lifecycle adapter for the placeholder fixture that requests pooled return immediately after death without coupling health, damage, or lifecycle code to `PoolManager`.
+- Added `UC_CombatSandbox` and extended the existing pool catalog with the stationary fixture while preserving all Step 8 projectile/beam entries.
+- Added `CombatSandboxBootstrap` with explicit serialized references and fail-closed validation for catalogs, services, spawn groups, fixture membership, and required physics layers.
+- Added Unity Editor automation that idempotently creates and validates the common prefab, prefab variant, fixture definition, catalogs, scene hierarchy, and baked NavMesh without hand-authored Unity YAML or GUIDs.
+- Added `CombatSandbox` with the required `__Systems`, `Environment`, `SpawnPoints`, `CameraRig`, `UI`, and `Lighting` roots; World-layer ground and obstacles; baked `NavMeshSurface`; pool/spawn/interaction/registry/bootstrap services; and Player/Ally/Enemy spawn groups.
+- Added Edit Mode coverage for prefab capability and hierarchy matrices, persisted targeting data, variant inheritance, catalogs, scene structure/NavMesh, fail-closed bootstrap, and the full stationary spawn/damage/death/return/respawn cycle through production services.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final code batch; the Tundra build succeeded in `Editor.log` at line 14015 and assemblies reloaded successfully. | Pass |
+| Compiler/assembly diagnostics | The final compile and Play Mode log segments contain 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | The Step 9 Editor command created and verified the prefabs, definition, catalogs, `CombatSandbox`, and baked NavMesh in the correct target project. | Pass |
+| Edit Mode suite | 220 total, 220 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 8 Step 9 cases and all 212 earlier cases. | Pass |
+| Actual Play Mode startup | Entering Play Mode with `CombatSandbox` active initialized the pool and spawn services and spawned the stationary fixture; the bootstrap success signal is recorded at `Editor.log` line 14384. | Pass |
+| Production lifecycle | A stationary unit spawns from its pool, takes lethal damage through `InteractionSystem`, unregisters and returns immediately, then reuses the same object with a new spawn ID, full health, and cleared status/target/attack state. | Pass |
+| Prefab and scene matrix | Tests load the saved Unity assets and assert all required components, hierarchy nodes, layers, sockets, scene roots, services, spawn groups, World geometry, and baked NavMesh data. | Pass |
+| Dependency audit | Runtime code has no scene-wide object discovery and no manager/service singleton. The only static `Instance` is a private stateless registry comparer. | Pass |
+| Scope audit | `SampleScene` is unchanged. No input asset, package, design document, or design-document checkbox was modified. | Pass |
+
+The definitive Edit Mode suite ran through the project-local verification command in the verified correct target Editor. Actual Play Mode was entered and exited through the live Editor with `CombatSandbox` active; its successful service initialization and fixture spawn were confirmed from the target project's Editor log.
+
+### Explicit Structural Choices
+
+- The Step 9 fixture is deliberately a prefab variant of `PF_Unit_Base`, so the common capability matrix remains inherited while the test-only death-return adapter and placeholder capsule remain outside the production base prefab.
+- The common prefab includes no motor and no attack executor at this step. Those are concrete-unit responsibilities introduced in Steps 10 through 13; a null attack definition is the explicit stationary/non-attacking state.
+- Bootstrap dependencies are wired explicitly in the saved scene. Failure of any required reference, catalog, definition, spawn group, layer, pool initialization, or initial spawn disables gameplay as one coherent sandbox failure rather than allowing partial startup.
+- Targeting query capacity `32`, scan interval `0.25 s`, and initial offset `0 s` are the temporary sandbox values already specified by the implementation design, not newly invented balance values.
+- The fixture pool uses one prewarmed instance and one retained inactive instance so the required reuse cycle can be verified without adding a concrete Player/Ally/Enemy unit before their numbered steps.

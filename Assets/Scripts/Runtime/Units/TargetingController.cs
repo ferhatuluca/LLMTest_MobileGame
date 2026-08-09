@@ -46,6 +46,10 @@ namespace MonstersVsZombies.Units
         private float _queryRange;
         private bool _isPreparedForSpawn;
 
+        [field: SerializeField] public int QueryCapacity { get; private set; }
+        [field: SerializeField] public float ScanInterval { get; private set; }
+        [field: SerializeField] public float InitialScanDelay { get; private set; }
+
         public event Action<TargetingEvent> TargetAcquired;
         public event Action<TargetingEvent> TargetLost;
 
@@ -61,6 +65,14 @@ namespace MonstersVsZombies.Units
         private void Awake()
         {
             CacheSiblingComponents();
+            EnsureQueryBuffer();
+            EnsurePermanentSubscriptions();
+        }
+
+        private void OnValidate()
+        {
+            CacheSiblingComponents();
+            EnsureQueryBuffer();
             EnsurePermanentSubscriptions();
         }
 
@@ -80,7 +92,8 @@ namespace MonstersVsZombies.Units
             float scanInterval,
             float initialScanDelay)
         {
-            if (_queryBuffer != null || queryCapacity <= 0 ||
+            if (queryCapacity <= 0 ||
+                (QueryCapacity > 0 && QueryCapacity != queryCapacity) ||
                 scanInterval <= 0f ||
                 float.IsNaN(scanInterval) ||
                 float.IsInfinity(scanInterval) ||
@@ -92,7 +105,10 @@ namespace MonstersVsZombies.Units
                 return false;
             }
 
-            _queryBuffer = new TargetQueryBuffer(queryCapacity);
+            QueryCapacity = queryCapacity;
+            ScanInterval = scanInterval;
+            InitialScanDelay = initialScanDelay;
+            _queryBuffer = new TargetQueryBuffer(QueryCapacity);
             _scanInterval = scanInterval;
             _initialScanDelay = initialScanDelay;
             _scanTimeRemaining = initialScanDelay;
@@ -102,6 +118,7 @@ namespace MonstersVsZombies.Units
         public bool ValidateConfiguration(out string failureMessage)
         {
             CacheSiblingComponents();
+            EnsureQueryBuffer();
             if (_unitController == null || _lifecycleController == null)
             {
                 failureMessage =
@@ -148,6 +165,8 @@ namespace MonstersVsZombies.Units
         public bool PrepareForSpawn()
         {
             CacheSiblingComponents();
+            EnsureQueryBuffer();
+            EnsurePermanentSubscriptions();
             ClearTarget();
             _scanTimeRemaining = _initialScanDelay;
             _isPreparedForSpawn = false;
@@ -413,6 +432,27 @@ namespace MonstersVsZombies.Units
         private static bool IsPositiveFinite(float value)
         {
             return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private void EnsureQueryBuffer()
+        {
+            if (QueryCapacity <= 0 || !IsPositiveFinite(ScanInterval) ||
+                InitialScanDelay < 0f || InitialScanDelay > ScanInterval)
+            {
+                return;
+            }
+
+            if (_queryBuffer == null || _queryBuffer.Capacity != QueryCapacity)
+            {
+                _queryBuffer = new TargetQueryBuffer(QueryCapacity);
+            }
+
+            _scanInterval = ScanInterval;
+            _initialScanDelay = InitialScanDelay;
+            if (!_isPreparedForSpawn)
+            {
+                _scanTimeRemaining = _initialScanDelay;
+            }
         }
     }
 }

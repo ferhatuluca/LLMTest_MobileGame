@@ -45,3 +45,11 @@ MonoBehaviour:
     <CapacityPolicy>k__BackingField: 0
     <MaximumActiveCount>k__BackingField: 0
     <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: StationaryTestUnit
+    <Prefab>k__BackingField: {fileID: 3142620929144687454, guid: a30f028f88ce1aa409853e057a449107, type: 3}
+    <InitialPrewarmCount>k__BackingField: 1
+    <MaximumInactiveRetainedCount>k__BackingField: 1
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
