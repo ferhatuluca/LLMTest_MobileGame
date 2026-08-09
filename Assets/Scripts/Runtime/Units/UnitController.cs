@@ -1,6 +1,7 @@
 using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Health;
 using MonstersVsZombies.Combat.StatusEffects;
+using MonstersVsZombies.Combat.Attacks;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Units.Movement;
@@ -20,6 +21,8 @@ namespace MonstersVsZombies.Units
         public DamageController DamageController { get; private set; }
         public StatusEffectController StatusEffectController { get; private set; }
         public UnitLifecycleController LifecycleController { get; private set; }
+        public TargetingController TargetingController { get; private set; }
+        public AttackController AttackController { get; private set; }
         public IUnitMotor UnitMotor { get; private set; }
 
         private void Awake()
@@ -61,6 +64,34 @@ namespace MonstersVsZombies.Units
 
             failureMessage = string.Empty;
             return true;
+        }
+
+        public bool ValidateGameplayComponents(out string failureMessage)
+        {
+            CacheSiblingComponents();
+            if (!ValidateCoreComponents(out failureMessage))
+            {
+                return false;
+            }
+
+            if (TargetingController == null)
+            {
+                failureMessage = $"{name} requires a {nameof(TargetingController)} sibling.";
+                return false;
+            }
+
+            if (AttackController == null)
+            {
+                failureMessage = $"{name} requires an {nameof(AttackController)} sibling.";
+                return false;
+            }
+
+            if (!TargetingController.ValidateConfiguration(out failureMessage))
+            {
+                return false;
+            }
+
+            return AttackController.ValidateConfiguration(out failureMessage);
         }
 
         internal bool ConfigureSpawn(UnitDefinition definition, SpawnId spawnId)
@@ -106,6 +137,8 @@ namespace MonstersVsZombies.Units
             DamageController = GetComponent<DamageController>();
             StatusEffectController = GetComponent<StatusEffectController>();
             LifecycleController = GetComponent<UnitLifecycleController>();
+            TargetingController = GetComponent<TargetingController>();
+            AttackController = GetComponent<AttackController>();
             UnitMotor = null;
 
             MonoBehaviour[] siblingBehaviours = GetComponents<MonoBehaviour>();

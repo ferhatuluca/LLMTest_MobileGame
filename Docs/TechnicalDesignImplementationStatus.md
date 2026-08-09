@@ -6,7 +6,7 @@ This document records implementation progress and verification evidence without 
 
 **Status:** Complete  
 **Completed:** 2026-08-08  
-**Next step:** Steps 1 through 6 are complete; Step 7 has not been started.
+**Next step:** Steps 1 through 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -58,7 +58,7 @@ The implementation document requests a test-fixture/test-assets folder but does 
 **Status:** Complete  
 **Completed:** 2026-08-08  
 **Commit summary:** `Step 1 completed: add shared identifiers and pure rules`  
-**Next step:** Steps 2 through 6 are complete; Step 7 has not been started.
+**Next step:** Steps 2 through 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -100,7 +100,7 @@ The tests ran in Unity `6000.5.5f1` batch mode against the isolated source copy 
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 2 completed: add configuration and catalog validation`
-**Next step:** Steps 3 through 6 are complete; Step 7 has not been started.
+**Next step:** Steps 3 through 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -142,7 +142,7 @@ The definitive suite ran in Unity `6000.5.5f1` batch mode against a fresh isolat
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 3 completed: add core unit components`
-**Next step:** Steps 4 through 6 are complete; Step 7 has not been started.
+**Next step:** Steps 4 through 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -187,7 +187,7 @@ The definitive suite used the isolated Unity `6000.5.5f1` validation copy synchr
 **Status:** Complete
 **Completed:** 2026-08-08
 **Commit summary:** `Step 4 completed: add unit registration and interaction`
-**Next step:** Steps 5 and 6 are complete; Step 7 has not been started.
+**Next step:** Steps 5 through 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -233,7 +233,7 @@ The final suite ran through the project-local verification command in the verifi
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 5 completed: add pooled entity and pool manager`
-**Next step:** Step 6 is complete; Step 7 has not been started.
+**Next step:** Steps 6 and 7 are complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -279,7 +279,7 @@ The definitive suite ran through the project-local verification command in the v
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 6 completed: add spawn orchestration and requests`
-**Next step:** Step 7 has not been started.
+**Next step:** Step 7 is complete; Step 8 has not been started.
 
 ### Implemented
 
@@ -323,3 +323,51 @@ The definitive suite ran through the project-local verification command in the v
 - Optional position validation is selected explicitly through the `SpawnManager` overload. `NavMeshSpawnPositionValidator` accepts caller-supplied sample distance and area mask; Step 6 introduces no sampling radius, area, or other balance default. Final `NavMeshAgent.Warp` and on-NavMesh confirmation remain activation-dependent responsibilities for Step 11.
 - Spawn context and projectile lifecycle receivers are required on the pooled root. The documented production prefab hierarchy places lifecycle/combat capabilities on that root, and nested pooled roots remain independent.
 - Initial and Debug entry-point components are manual request adapters only. Automatic initial spawning, input/UI commands, concrete unit references, and `SpawnUnitsOnDeath` behavior remain assigned to their later numbered steps.
+
+## Step 7 - Targeting and Attack Timing
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 7 completed: add targeting and attack timing`
+**Next step:** Step 8 has not been started.
+
+### Implemented
+
+- Added shared `CombatRangeRules` for finite, inclusive, squared XZ-plane distance checks used by target acquisition, target retention, attack gating, and melee impact revalidation.
+- Added `TargetingController` with explicit caller-supplied query capacity and staggered scan schedule, cheap current-target checks between scans, nearest-hostile selection, target identity retention, and immediate target-loss events on target despawn or source death.
+- Reused `TargetQueryBuffer` filtering and spawn-ID deduplication so multiple hurtboxes resolve to one logical candidate before deterministic nearest-target selection.
+- Added separate targeting modes: AI units query their authored chase range; Player units query only the currently selected attack's authored attack range and never request movement.
+- Added `IAttackExecutor`, immutable execution/timing/impact contracts, explicit delivery bindings, and successful-interaction result policies.
+- Added `AttackController` with start-to-start cooldown, windup, one impact gate, recovery, cancellation, composite `AttackKey`, and reusable per-sequence `AttackHitLedger`.
+- Preserved committed cooldown while clearing an interrupted windup and its ledger; death and pool return reset all timing and transient attack identity.
+- Added explicit fixed-AI single-executor validation and Player Projectile/Grenade/Hitscan executor switching without replacing the `AttackController`.
+- Added `AttackAnimationEventRelay`, with placeholder timing and later animation events both entering the same guarded impact method.
+- Updated `UnitController` caching and completed-gameplay validation for `TargetingController` and `AttackController` while retaining the earlier core-only validation boundary used by generic pooled fixtures.
+- Added runtime-compatible attack executor, result-policy, and motor probes plus Edit Mode tests for targeting, range, timing, cancellation, binding, policy, and pooled-state behavior.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the target project; the final Tundra build succeeded in `Editor.log` at line 8170 and completed its assembly reload. | Pass |
+| Compiler/assembly diagnostics | The final code-batch log segment from line 8170 contains 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or assembly-resolution failures. | Pass |
+| Edit Mode suite | 187 total, 187 passed, 0 failed, 0 skipped, 0 inconclusive. This includes 24 Step 7 cases and all 163 earlier cases. | Pass |
+| Target selection | Nearest hostile selection, all invalid candidate states/factions, exact-distance deterministic ties, and multiple-hurtbox spawn-ID deduplication are asserted. | Pass |
+| Range contract | Acquisition, retention, Player attack range, AI chase range, attack start, and melee impact use the shared root-position XZ rule; vertical separation and inclusive boundaries are covered. | Pass |
+| Scan and lifecycle behavior | Explicit stagger offsets, cheap between-scan target loss, target despawn/death, source death, and subscription cleanup are covered. | Pass |
+| Attack timing | Start-to-start cooldown, windup, one-impact gating, recovery, ledger reuse, successful-result policy feedback, and animation-relay impact routing are covered. | Pass |
+| Cancellation and pooling | Stun, range loss, target loss/despawn, attacker death, and pool return clear active attack state; ordinary cancellation retains committed cooldown while death/return resets it. | Pass |
+| Executor bindings | Missing, duplicate, incompatible, fixed-AI multi-binding, and Player Projectile/Grenade/Hitscan switching cases are asserted without controller replacement. | Pass |
+| Scope audit | No scene, production prefab, ScriptableObject asset, input asset, balance value, package, or design-document checkbox was changed. | Pass |
+
+The definitive suite ran through the project-local verification command in the verified correct target Editor. `Logs/ImplementationEditModeSummary.txt` supplied the final totals, and the final Unity log segment was scanned for compiler, assembly, unhandled-exception, and assertion diagnostics.
+
+### Explicit Structural Choices
+
+- Scan capacity, interval, and initial stagger offset are mandatory caller-supplied configuration; Step 7 adds no production scan or balance defaults.
+- Equal-distance candidates retain the Step 4 deterministic rule: the lower valid spawn ID wins.
+- A unit without an `AttackDefinition` is explicitly non-attacking and requires no executor. Fixed AI units with an attack bind exactly one executor; the Player may bind each supported selectable delivery once.
+- Player definition switching is transactional: an invalid or unbound definition leaves the prior definition and executor intact.
+- Attack sequences restart their local sequence counter after pool reset, while the composite source `SpawnId` makes the resulting `AttackKey` unique across spawns.
+- Cooldown advances while an active unit is stunned, but a stun cancels any current windup and does not refund the already committed cooldown.
+- A melee target that leaves attack range at impact produces no executor call and enters recovery. Actual melee, projectile, grenade, and hitscan delivery behavior remains Step 8 scope.
