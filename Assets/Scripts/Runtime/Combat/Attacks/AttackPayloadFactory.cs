@@ -9,6 +9,11 @@ namespace MonstersVsZombies.Combat.Attacks
     {
         public static DamagePayload Create(AttackExecutionContext executionContext)
         {
+            if (executionContext.HasCapturedDamagePayload)
+            {
+                return executionContext.CapturedDamagePayload;
+            }
+
             if (executionContext.Source == null ||
                 executionContext.Definition == null ||
                 !executionContext.AttackKey.IsValid)

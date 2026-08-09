@@ -7,6 +7,7 @@ using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Spawning;
 using MonstersVsZombies.Units.Movement;
+using MonstersVsZombies.Units.Special;
 using UnityEngine;
 
 namespace MonstersVsZombies.Units.AI
@@ -142,6 +143,16 @@ namespace MonstersVsZombies.Units.AI
                 default:
                     HasRuntimeServices = false;
                     break;
+            }
+
+            SpawnUnitsOnDeath spawnUnitsOnDeath =
+                GetComponent<SpawnUnitsOnDeath>();
+            if (HasRuntimeServices && spawnUnitsOnDeath != null)
+            {
+                HasRuntimeServices = spawnUnitsOnDeath
+                    .ConfigureRuntimeServices(
+                        spawnManager,
+                        interactionSystem);
             }
 
             return HasRuntimeServices;

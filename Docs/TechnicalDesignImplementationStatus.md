@@ -566,7 +566,7 @@ The definitive suite ran after removal of the temporary automatic live-check hoo
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 12 completed: add regular concrete unit families`
-**Next step:** Step 13 has not been started.
+**Next step:** Step 13 is complete; Step 14 has not been started.
 
 ### Implemented
 
@@ -603,3 +603,47 @@ The definitive suite ran after the final runtime guard and after the temporary a
 - Classic Melee reuses one nested visual across factions, Classic Range reuses one nested weapon-bearing visual across factions, and Dragon reuses one visual plus MouthSocket exactly as required. Faction and damage rules remain outside visual prefabs.
 - `ImmediateDeathPoolReturn` is the existing explicit lifecycle requester used by the sandbox until presentation-driven death completion exists. Health and lifecycle controllers remain unaware of pooling.
 - Ranged runtime services are injected after spawn. Prefab assets retain their socket references but do not serialize scene-level managers or interaction services.
+
+## Step 13 - Special Enemy Units
+
+**Status:** Complete
+**Completed:** 2026-08-09
+**Commit summary:** `Step 13 completed: add Stunner and Divisible enemies`
+**Next step:** Step 14 has not been started.
+
+### Implemented
+
+- Added an attack-payload policy seam that captures one immutable damage payload before executor delivery, allowing per-spawn special policy state without moving damage or faction rules out of `InteractionSystem`.
+- Added pooled `StunnerHitPolicy` backed by the Step 1 `StunnerHitSchedule`; it retains the authored 2-second stun payload only for the next required successful hit and advances only from an Applied interaction.
+- Created exact Stunner attack/unit data, a nested hammer visual under `RightHandSocket`, and `PF_Enemy_Stunner` with one melee executor, cadence policy, and explicit death return.
+- Added the allocation-free `MiniDivisibleSpawnFormation` rule for three distinct 120-degree radial positions.
+- Created MiniDivisible before Divisible with exact authored data, a dedicated Enemy-base prefab, the shared Divisible nested visual at smaller scale, smaller inherited agent/hurtbox dimensions, no death-spawn component, and the exact `30/150` Expandable pool baseline.
+- Added pooled `SpawnUnitsOnDeath`, which fires once per Divisible spawn, samples three primary NavMesh positions, retries a half-distance ring for invalid positions, reports position and non-position failures separately, configures child AI services, and requests parent return only after all child requests finish.
+- Created exact Divisible attack/unit data and `PF_Enemy_Divisible` with one melee executor and `SpawnUnitsOnDeath` pointing only to `UD_Enemy_MiniDivisible`; it deliberately has no immediate-return adapter.
+- Registered Stunner, MiniDivisible, and Divisible in both catalogs and added one ordered saved-scene direct spawn path for each through `SpecialUnitSandboxScenarioController`.
+- Added idempotent Unity Editor automation and eleven new Edit Mode cases for cadence, captured payload, rejected/missed results, reset, formation, diagnostics, authored tuning, prefab separation, nested visuals, catalogs, and scene paths.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Correct-project compilation | Unity `6000.5.5f1` compiled the final Step 13 diagnostic batch; Tundra succeeded at `Editor.log` line 38713 and assemblies reloaded successfully. | Pass |
+| Compiler/assembly diagnostics | The final compile/test segment contains 0 current C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | A final idempotent Editor pass verified all three definitions/prefabs, shared/nested visuals, catalogs, special components, and sandbox wiring at `Editor.log` line 38343. | Pass |
+| Edit Mode suite | 261 total, 261 passed, 0 failed, 0 skipped, 0 inconclusive at `2026-08-09T15:00:35Z`. This includes 11 Step 13 cases and all 250 earlier cases. | Pass |
+| Stunner cadence and expiry | A controlled live sequence applied seven damaging hits, accepted stun only on hits 1/4/7, observed all action blocks immediately, and observed normal AI resume after each 2-second expiry at `Editor.log` line 37900. | Pass |
+| Stunner reuse | The same Stunner object reused from spawn ID `15` to `17` with full health, no stun/target/path, and cadence counter reset to `0`, also recorded at line 37900. | Pass |
+| Divisible first death | The live Divisible produced exactly three distinct active MiniDivisibles from sampled radial positions, published one completion, and returned only after child requests completed. | Pass |
+| Divisible reuse | The same Divisible object reused from spawn ID `18` to `22`; each of two death cycles produced exactly three children once, recorded at `Editor.log` line 37913. | Pass |
+| MiniDivisible independence | Asset and live checks confirm MiniDivisible is a direct Enemy-base variant, acts as a normal independent melee Enemy, shares only the visual, and contains no divide-on-death module. | Pass |
+| Scope audit | `SampleScene`, Build Settings, packages, layers, input assets, design documents, and design checkboxes are unchanged; no third-party or paid asset was introduced. | Pass |
+
+The definitive suite ran after the temporary automatic live verifier was removed and after the death-spawn result began distinguishing invalid NavMesh positions from other failures. Live validation used actual status timing, lifecycle callbacks, registry membership, NavMesh sampling, pooling, and child AI service binding.
+
+### Explicit Structural Choices
+
+- Stunner's 2-second effect remains definition-owned. The policy only decides whether the immutable per-hit snapshot retains or removes that effect; it does not own damage or status application.
+- The hammer, larger Stunner silhouette, and thicker Divisible silhouette are Unity-native placeholder presentation. No numeric special-unit collider dimensions are specified, so Stunner and Divisible inherit the verified common gameplay collider.
+- MiniDivisible uses an explicit one-half placeholder scale for the shared visual, NavMesh agent radius/height, and hurtbox radius. This satisfies the documented smaller form while keeping all dimensions proportional and visibly replaceable when final art/collider specifications exist.
+- Divisible's primary child ring is derived from its NavMesh-agent diameter. Invalid positions retry at half that derived distance and use the agent radius as the NavMesh sampling distance, avoiding an independent tuning value.
+- `SpawnUnitsOnDeath` owns the Divisible return request so death effects finish before pool release. MiniDivisible and Stunner use the existing immediate requester because they have no ordered death effect.

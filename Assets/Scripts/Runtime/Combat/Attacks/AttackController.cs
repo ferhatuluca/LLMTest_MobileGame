@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core;
@@ -57,6 +58,8 @@ namespace MonstersVsZombies.Combat.Attacks
         private readonly AttackHitLedger _hitLedger = new AttackHitLedger();
         private readonly List<IAttackResultPolicy> _resultPolicies =
             new List<IAttackResultPolicy>();
+        private readonly List<IAttackPayloadPolicy> _payloadPolicies =
+            new List<IAttackPayloadPolicy>();
 
         [SerializeField] private AttackExecutorBinding[] _executorBindings =
             Array.Empty<AttackExecutorBinding>();
@@ -322,7 +325,7 @@ namespace MonstersVsZombies.Combat.Attacks
             }
 
             _hasImpacted = true;
-            AttackExecutionContext executionContext =
+            AttackExecutionContext baseExecutionContext =
                 new AttackExecutionContext(
                     _unitController,
                     _attackTarget,
@@ -330,6 +333,24 @@ namespace MonstersVsZombies.Combat.Attacks
                     AttackDefinition,
                     ActiveAttackKey,
                     _hitLedger);
+            DamagePayload capturedPayload =
+                AttackPayloadFactory.Create(baseExecutionContext);
+            foreach (IAttackPayloadPolicy payloadPolicy in _payloadPolicies)
+            {
+                capturedPayload = payloadPolicy.ModifyPayload(
+                    baseExecutionContext,
+                    capturedPayload);
+            }
+
+            AttackExecutionContext executionContext =
+                new AttackExecutionContext(
+                    _unitController,
+                    _attackTarget,
+                    _targetingController.CurrentTargetPoint,
+                    AttackDefinition,
+                    ActiveAttackKey,
+                    _hitLedger,
+                    capturedPayload);
             InteractionResult interactionResult =
                 _activeExecutor.ExecuteImpact(executionContext);
             if (interactionResult.IsApplied)
@@ -623,6 +644,7 @@ namespace MonstersVsZombies.Combat.Attacks
         private void CacheResultPolicies()
         {
             _resultPolicies.Clear();
+            _payloadPolicies.Clear();
             MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
             foreach (MonoBehaviour behaviour in behaviours)
             {
@@ -630,6 +652,12 @@ namespace MonstersVsZombies.Combat.Attacks
                     behaviour is IAttackResultPolicy resultPolicy)
                 {
                     _resultPolicies.Add(resultPolicy);
+                }
+
+                if (behaviour != this &&
+                    behaviour is IAttackPayloadPolicy payloadPolicy)
+                {
+                    _payloadPolicies.Add(payloadPolicy);
                 }
             }
         }

@@ -1,0 +1,186 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3634851904647522443
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 705356762631780832}
+    m_Modifications:
+    - target: {fileID: 3228889944643292674, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_Name
+      value: PF_Visual_Divisible
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c599809cfde56984f896223277424ef1, type: 3}
+--- !u!4 &5634022368453078911 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8953587011464906740, guid: c599809cfde56984f896223277424ef1, type: 3}
+  m_PrefabInstance: {fileID: 3634851904647522443}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8150976168835567546
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: <AttackDefinition>k__BackingField
+      value: 
+      objectReference: {fileID: 11400000, guid: 9a73f8098d14ebb48b32d28482642e53, type: 2}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
+      value: 
+      objectReference: {fileID: 187974238607181155}
+    - target: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_Name
+      value: PF_Enemy_Divisible
+      objectReference: {fileID: 0}
+    - target: {fileID: 7780148834478849021, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: <Definition>k__BackingField
+      value: 
+      objectReference: {fileID: 11400000, guid: 1b37f8769e9ddea44b77213a774f6b00, type: 2}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8862966708532022396, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8707705063797716570, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5634022368453078911}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 187974238607181155}
+    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5834538120340022099}
+  m_SourcePrefab: {fileID: 100100000, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+--- !u!4 &705356762631780832 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8707705063797716570, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+  m_PrefabInstance: {fileID: 8150976168835567546}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2589564593641728181 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
+  m_PrefabInstance: {fileID: 8150976168835567546}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &187974238607181155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2589564593641728181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc8f3abf433d8de4a8e964a7301a6f07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.MeleeAttackExecutor
+  <InteractionSystem>k__BackingField: {fileID: 0}
+--- !u!114 &5834538120340022099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2589564593641728181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efa4c120393a0234b82d093927f38284, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Special.SpawnUnitsOnDeath
+  <MiniDivisibleDefinition>k__BackingField: {fileID: 11400000, guid: 3cf32afabde91ca45a32df9c52c42ce6, type: 2}

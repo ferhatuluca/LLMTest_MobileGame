@@ -1,4 +1,5 @@
 using System;
+using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Data;
@@ -15,6 +16,8 @@ namespace MonstersVsZombies.Combat.Attacks
         public AttackDefinition Definition { get; }
         public AttackKey AttackKey { get; }
         public AttackHitLedger HitLedger { get; }
+        public DamagePayload CapturedDamagePayload { get; }
+        public bool HasCapturedDamagePayload { get; }
 
         public AttackExecutionContext(
             UnitController source,
@@ -48,6 +51,34 @@ namespace MonstersVsZombies.Combat.Attacks
             Definition = definition;
             AttackKey = attackKey;
             HitLedger = hitLedger;
+            CapturedDamagePayload = default;
+            HasCapturedDamagePayload = false;
+        }
+
+        public AttackExecutionContext(
+            UnitController source,
+            UnitController target,
+            Vector3 targetPosition,
+            AttackDefinition definition,
+            AttackKey attackKey,
+            AttackHitLedger hitLedger,
+            DamagePayload capturedDamagePayload)
+        {
+            if (!capturedDamagePayload.IsValid)
+            {
+                throw new ArgumentException(
+                    "A captured attack payload must be valid.",
+                    nameof(capturedDamagePayload));
+            }
+
+            Source = source;
+            Target = target;
+            TargetPosition = targetPosition;
+            Definition = definition;
+            AttackKey = attackKey;
+            HitLedger = hitLedger;
+            CapturedDamagePayload = capturedDamagePayload;
+            HasCapturedDamagePayload = true;
         }
     }
 
@@ -62,6 +93,13 @@ namespace MonstersVsZombies.Combat.Attacks
         void HandleSuccessfulInteraction(
             AttackExecutionContext executionContext,
             InteractionResult interactionResult);
+    }
+
+    public interface IAttackPayloadPolicy
+    {
+        DamagePayload ModifyPayload(
+            AttackExecutionContext executionContext,
+            DamagePayload basePayload);
     }
 
     [Serializable]

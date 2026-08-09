@@ -141,3 +141,27 @@ MonoBehaviour:
     <CapacityPolicy>k__BackingField: 0
     <MaximumActiveCount>k__BackingField: 0
     <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyStunner
+    <Prefab>k__BackingField: {fileID: 5807327623642508625, guid: 0a95c3abe7a997b40adfbaa20acaf724, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyMiniDivisible
+    <Prefab>k__BackingField: {fileID: 5092721938068063081, guid: 35df726a4d626564793a95fc61c92f75, type: 3}
+    <InitialPrewarmCount>k__BackingField: 30
+    <MaximumInactiveRetainedCount>k__BackingField: 150
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
+  - <PoolId>k__BackingField:
+      <Value>k__BackingField: EnemyDivisible
+    <Prefab>k__BackingField: {fileID: 2589564593641728181, guid: 7790b47a1d7d3574b803140965611eeb, type: 3}
+    <InitialPrewarmCount>k__BackingField: 10
+    <MaximumInactiveRetainedCount>k__BackingField: 100
+    <CapacityPolicy>k__BackingField: 0
+    <MaximumActiveCount>k__BackingField: 0
+    <EnableCollectionChecks>k__BackingField: 1
