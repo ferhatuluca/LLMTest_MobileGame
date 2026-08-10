@@ -2,7 +2,10 @@
   "name": "MonstersVsZombies.Tests.PlayMode",
   "rootNamespace": "MonstersVsZombies.Tests.PlayMode",
   "references": [
-    "MonstersVsZombies.Runtime"
+    "MonstersVsZombies.Runtime",
+    "Unity.InputSystem",
+    "Unity.InputSystem.TestFramework",
+    "Unity.ugui"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

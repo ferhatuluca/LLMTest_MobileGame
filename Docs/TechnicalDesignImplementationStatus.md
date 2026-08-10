@@ -653,7 +653,7 @@ The definitive suite ran after the temporary automatic live verifier was removed
 **Status:** Complete
 **Completed:** 2026-08-09
 **Commit summary:** `Step 14 completed: add developer controls and diagnostics`
-**Next step:** Step 15 has not been started.
+**Next step:** Step 15 is complete; Step 16 has not been started.
 
 ### Implemented
 
@@ -694,3 +694,51 @@ The live verifier used F1 through the real Input System action path. Unity Edito
 - Clear snapshots active pooled entities, preserves active Player roots, and calls `PoolManager.Return` for every other active entity. It neither calls `Destroy` nor bypasses lifecycle cleanup.
 - The panel refreshes only while visible and at a fixed unscaled diagnostics cadence. It does not add a gameplay manager or alter simulation timing.
 - Optional spawn-at-cursor was deliberately deferred because the complete required keyboard, button, Spawn 10, clear/reset, pause, gizmo, and diagnostic controls were prioritized; no required exit condition depends on it.
+
+## Step 15 - Complete Automated and Manual Validation
+
+**Status:** Complete
+**Completed:** 2026-08-10
+**Commit summary:** `Step 15 completed: validate complete sandbox system`
+**Next step:** Step 16 has not been started.
+
+### Implemented
+
+- Added a saved-scene Play Mode system suite that loads `CombatSandbox`, waits for transactional bootstrap completion, and verifies the production services, pools, registry, NavMesh agents, concrete units, deliveries, input, and lifecycle behavior together.
+- Added hostile Ally-versus-Enemy damage and same-faction rejection checks, plus source, friendly, inactive, dead, World, and hostile-contact collision-policy coverage for Melee, Projectile, Grenade, and Hitscan delivery types.
+- Added full AI chase-to-attack-to-chase-to-idle range transitions, deterministic stun stop/clear/resume behavior, and a runtime-services-before-decision assertion for every active AI brain.
+- Added live Divisible death validation for exactly three independently active MiniDivisibles and pooled Stunner/Divisible reuse validation for health, identity, target, stun, cadence, and one-shot death-spawn state.
+- Added Bullet and Fireball impact/expiry pool-return checks, Grenade fuse return, multi-hurtbox area deduplication, and an in-flight projectile source-death/reuse regression using the immutable captured spawn identity.
+- Added an isolated official Input System Play Mode fixture that proves Q/E bindings and callbacks cycle Pistol, GrenadeGun, and SpaceGun through both wrap directions while the Player is in an eligible idle attack state.
+- Extended the project-local verification runner with an asynchronous Play Mode command, trigger file, and separate result summary while retaining the synchronous Edit Mode path.
+- Kept the Play Mode test assembly player-compatible and added only the existing Input System test-framework and uGUI assembly references needed by the saved-scene tests.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Final compilation | Unity `6000.5.5f1` compiled the final Step 15 source batch in the isolated exact project copy; `Logs/Step15CompileFinal.log` records Tundra success with 0 C# errors, C# warnings, or script-compilation failures. | Pass |
+| Complete Edit Mode suite | `Logs/Step15EditModeFinal.xml` records 270 total, 270 passed, 0 failed, 0 skipped at `2026-08-10T07:01:29Z`, retaining faction, health, damage, weapon cycle, Stunner cadence, targeting ties, attack-key/ledger, MiniDivisible formation, and catalog/definition coverage. | Pass |
+| Complete Play Mode suite | `Logs/Step15PlayModeFinal.xml` records 14 total, 14 passed, 0 failed, 0 skipped at `2026-08-10T07:00:34Z`. This includes the 12 new complete-system cases, the isolated Q/E case, and the original Play Mode smoke case. | Pass |
+| Interaction matrix | The live suite accepts hostile Ally/Enemy damage and checks friendly-fire plus source, inactive, dead, World, and hostile policies across all four delivery families. | Pass |
+| AI, stun, and specials | The live suite crosses both AI range boundaries in both directions, stops and resumes all stun-gated actions, produces exactly three independent MiniDivisibles, and verifies clean Stunner/Divisible reuse. | Pass |
+| Projectile lifecycle | The live suite verifies Bullet/Fireball impact and lifetime return, Grenade fuse return and hurtbox deduplication, and safe source death/reuse while a projectile remains in flight. | Pass |
+| Input and bootstrap | The live suite proves immediate Player spawn after service initialization and Q/E action-to-reader-to-weapon callbacks with Pistol/GrenadeGun/SpaceGun wrap in both directions. | Pass |
+| Concrete prefab validator | `Logs/Step15ConcreteValidator.log` records 10 concrete AI definitions and their catalog-backed prefabs verified with no unresolved validation error. | Pass |
+| Manual checklist closure | The retained Step 10 live evidence covers keyboard/on-screen movement and all three Player weapons; Step 11 covers live NavMesh boundary movement; Steps 12-13 cover every concrete unit, mixed faction combat, Stunner cadence, Divisible, death, return, and reuse; Step 14 covers every shortcut/button, HUD, range gizmos, diagnostics, clear, and reset. The Step 15 saved-scene suite reruns the cross-system interaction and repeated lifecycle cases. No checklist defect remains known. | Pass |
+| Gameplay Console | The definitive suites completed without an unhandled gameplay exception, assertion failure, missing-reference exception, or repeated gameplay warning. The batch logs contain only the known transient Unity LicenseClient IPC handshake messages before project/test initialization; licensing recovered and every command exited successfully. | Pass |
+| Scope audit | Design documents and their checkboxes, `SampleScene`, packages, layers, input assets, authored balance values, and existing asset GUIDs remain unchanged; no third-party or paid asset was introduced. | Pass |
+
+### Manual Acceptance Mapping
+
+- Immediate Player spawn, keyboard/on-screen movement, all three visible weapons/HUD updates, and common Pistol/Grenade/SpaceGun interaction paths are backed by the saved-scene Step 10 live run and repeated bootstrap/input/delivery assertions in Step 15.
+- Every concrete unit was spawned individually through its documented key and panel path in Step 14; every definition/prefab pair was revalidated in Step 15. Mixed Player/Ally/Enemy groups and melee, projectile, area, hitscan, and Fireball behavior are covered by the retained Steps 11-14 live runs and the Step 15 system matrix.
+- Stunner hits 1/4/7, full stun gating/expiry, Divisible's three children, dead-unit action exclusion, registry removal, and clean pooled reuse are covered by retained live evidence plus Step 15 lifecycle regressions.
+- Repeated clear, Player reset, respawn, stun, death, projectile return, and special-unit reuse leave no stale health, identity, target, path, cooldown/cadence, stun, one-shot spawn, or damage-payload state in the tested cycles.
+- The Step 14 Game-view capture and live verifier establish HUD/gizmo agreement and developer-control behavior; the Step 15 final test/validator runs establish the complete-system exit gate without saving runtime scene state.
+
+### Explicit Validation Choices
+
+- The Q/E test first clears non-Player combatants and performs a normal pooled Player reset so weapon definition changes are tested while `AttackController` is Idle. It still drives the real Input System action, `PlayerInputReader` event, and `PlayerWeaponController`; it does not call selection methods directly.
+- The official Input System fixture is isolated to the one keyboard case. The other Play Mode tests deliberately retain the real project Input System runtime while loading and exercising the production scene.
+- The manual checklist is closed from retained, concrete live evidence generated in the earlier numbered steps plus the final complete-system run. No new balance, art, package, or platform assumption was introduced merely to make validation pass.

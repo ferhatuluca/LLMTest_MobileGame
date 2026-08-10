@@ -11,16 +11,22 @@ namespace MonstersVsZombies.Editor.Validation
     public static class ImplementationVerificationRunner
     {
         private const string k_EditModeAssemblyName = "MonstersVsZombies.Tests.EditMode";
-        private const string k_TriggerRelativePath =
+        private const string k_PlayModeAssemblyName = "MonstersVsZombies.Tests.PlayMode";
+        private const string k_EditModeTriggerRelativePath =
             "Temp/RunImplementationEditModeTests.request";
-        private const string k_ResultRelativePath =
+        private const string k_PlayModeTriggerRelativePath =
+            "Temp/RunImplementationPlayModeTests.request";
+        private const string k_EditModeResultRelativePath =
             "Logs/ImplementationEditModeSummary.txt";
+        private const string k_PlayModeResultRelativePath =
+            "Logs/ImplementationPlayModeSummary.txt";
 
         private static bool s_isRunning;
+        private static TestRunnerApi s_activeTestRunnerApi;
 
         static ImplementationVerificationRunner()
         {
-            EditorApplication.delayCall += TryRunRequestedVerification;
+            EditorApplication.update += TryRunRequestedVerification;
         }
 
         [MenuItem("Tools/Monsters vs Zombies/Verification/Run Edit Mode Tests")]
@@ -40,7 +46,8 @@ namespace MonstersVsZombies.Editor.Validation
                 TestRunnerApi testRunnerApi =
                     ScriptableObject.CreateInstance<TestRunnerApi>();
                 VerificationCallbacks callbacks = new VerificationCallbacks(
-                    GetProjectPath(k_ResultRelativePath));
+                    "Edit Mode",
+                    GetProjectPath(k_EditModeResultRelativePath));
                 testRunnerApi.RegisterCallbacks(callbacks);
 
                 ExecutionSettings executionSettings = new ExecutionSettings(
@@ -60,7 +67,7 @@ namespace MonstersVsZombies.Editor.Validation
             }
             catch (Exception exception)
             {
-                WriteRunnerFailure(exception);
+                WriteRunnerFailure(k_EditModeResultRelativePath, exception);
                 Debug.LogException(exception);
             }
             finally
@@ -69,23 +76,71 @@ namespace MonstersVsZombies.Editor.Validation
             }
         }
 
+        [MenuItem("Tools/Monsters vs Zombies/Verification/Run Play Mode Tests")]
+        public static void RunPlayModeTests()
+        {
+            if (s_isRunning || EditorApplication.isCompiling ||
+                EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning(
+                    "[ImplementationVerification] Unity is busy; Play Mode verification was not started.");
+                return;
+            }
+
+            s_isRunning = true;
+            try
+            {
+                s_activeTestRunnerApi =
+                    ScriptableObject.CreateInstance<TestRunnerApi>();
+                VerificationCallbacks callbacks = new VerificationCallbacks(
+                    "Play Mode",
+                    GetProjectPath(k_PlayModeResultRelativePath),
+                    CompleteAsynchronousRun);
+                s_activeTestRunnerApi.RegisterCallbacks(callbacks);
+
+                ExecutionSettings executionSettings = new ExecutionSettings(
+                    new Filter
+                    {
+                        assemblyNames = new[] { k_PlayModeAssemblyName },
+                        testMode = TestMode.PlayMode
+                    });
+
+                Debug.Log(
+                    $"[ImplementationVerification] Running {k_PlayModeAssemblyName} asynchronously.");
+                s_activeTestRunnerApi.Execute(executionSettings);
+            }
+            catch (Exception exception)
+            {
+                WriteRunnerFailure(k_PlayModeResultRelativePath, exception);
+                CompleteAsynchronousRun();
+                Debug.LogException(exception);
+            }
+        }
+
         private static void TryRunRequestedVerification()
         {
-            string triggerPath = GetProjectPath(k_TriggerRelativePath);
-            if (!File.Exists(triggerPath))
+            if (s_isRunning || EditorApplication.isCompiling ||
+                EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 return;
             }
 
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating ||
-                EditorApplication.isPlayingOrWillChangePlaymode)
+            string editModeTriggerPath =
+                GetProjectPath(k_EditModeTriggerRelativePath);
+            if (File.Exists(editModeTriggerPath))
             {
-                EditorApplication.delayCall += TryRunRequestedVerification;
+                File.Delete(editModeTriggerPath);
+                RunEditModeTests();
                 return;
             }
 
-            File.Delete(triggerPath);
-            RunEditModeTests();
+            string playModeTriggerPath =
+                GetProjectPath(k_PlayModeTriggerRelativePath);
+            if (File.Exists(playModeTriggerPath))
+            {
+                File.Delete(playModeTriggerPath);
+                RunPlayModeTests();
+            }
         }
 
         private static string GetProjectPath(string relativePath)
@@ -95,9 +150,11 @@ namespace MonstersVsZombies.Editor.Validation
             return Path.Combine(projectPath, relativePath);
         }
 
-        private static void WriteRunnerFailure(Exception exception)
+        private static void WriteRunnerFailure(
+            string resultRelativePath,
+            Exception exception)
         {
-            string resultPath = GetProjectPath(k_ResultRelativePath);
+            string resultPath = GetProjectPath(resultRelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(resultPath));
             File.WriteAllLines(
                 resultPath,
@@ -109,14 +166,32 @@ namespace MonstersVsZombies.Editor.Validation
                 });
         }
 
+        private static void CompleteAsynchronousRun()
+        {
+            if (s_activeTestRunnerApi != null)
+            {
+                UnityEngine.Object.DestroyImmediate(s_activeTestRunnerApi);
+                s_activeTestRunnerApi = null;
+            }
+
+            s_isRunning = false;
+        }
+
         private sealed class VerificationCallbacks : ICallbacks
         {
             private readonly List<string> _failures = new List<string>();
+            private readonly string _modeLabel;
             private readonly string _resultPath;
+            private readonly Action _onRunFinished;
 
-            public VerificationCallbacks(string resultPath)
+            public VerificationCallbacks(
+                string modeLabel,
+                string resultPath,
+                Action onRunFinished = null)
             {
+                _modeLabel = modeLabel;
                 _resultPath = resultPath;
+                _onRunFinished = onRunFinished;
             }
 
             public void RunStarted(ITestAdaptor testsToRun)
@@ -143,9 +218,10 @@ namespace MonstersVsZombies.Editor.Validation
                 Directory.CreateDirectory(Path.GetDirectoryName(_resultPath));
                 File.WriteAllLines(_resultPath, lines);
                 Debug.Log(
-                    $"[ImplementationVerification] Edit Mode {result.ResultState}: " +
+                    $"[ImplementationVerification] {_modeLabel} {result.ResultState}: " +
                     $"{result.PassCount}/{total} passed, {result.FailCount} failed, " +
                     $"{result.SkipCount} skipped, {result.InconclusiveCount} inconclusive.");
+                _onRunFinished?.Invoke();
             }
 
             public void TestStarted(ITestAdaptor test)
