@@ -107,7 +107,7 @@ namespace MonstersVsZombies.Tests.EditMode
             TargetingController targeting =
                 prefab.GetComponent<TargetingController>();
 
-            Assert.That(targeting.QueryCapacity, Is.EqualTo(32));
+            Assert.That(targeting.QueryCapacity, Is.EqualTo(256));
             Assert.That(targeting.ScanInterval, Is.EqualTo(0.25f));
             Assert.That(targeting.InitialScanDelay, Is.Zero);
             Assert.That(targeting.ValidateConfiguration(out string failure),

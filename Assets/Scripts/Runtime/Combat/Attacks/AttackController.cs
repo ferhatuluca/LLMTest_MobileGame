@@ -6,6 +6,7 @@ using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
+using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Units;
 using UnityEngine;
 
@@ -105,7 +106,18 @@ namespace MonstersVsZombies.Combat.Attacks
 
         private void Update()
         {
-            AdvanceTime(Time.deltaTime);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+#endif
+            using (SandboxPerformanceDiagnostics.AttackMarker.Auto())
+            {
+                AdvanceTime(Time.deltaTime);
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            SandboxPerformanceDiagnostics.RecordAllocation(
+                SandboxPerformanceSubsystem.Attack,
+                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+#endif
         }
 
         private void OnDestroy()

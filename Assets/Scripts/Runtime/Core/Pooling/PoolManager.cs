@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MonstersVsZombies.Data;
+using MonstersVsZombies.Diagnostics;
 using UnityEngine;
 
 namespace MonstersVsZombies.Core.Pooling
@@ -100,6 +101,23 @@ namespace MonstersVsZombies.Core.Pooling
 
         public PoolRentResult<PooledEntity> Rent(PoolId poolId)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+#endif
+            using (SandboxPerformanceDiagnostics.PoolRentMarker.Auto())
+            {
+                PoolRentResult<PooledEntity> result = RentInternal(poolId);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                SandboxPerformanceDiagnostics.RecordAllocation(
+                    SandboxPerformanceSubsystem.PoolRent,
+                    GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+#endif
+                return result;
+            }
+        }
+
+        private PoolRentResult<PooledEntity> RentInternal(PoolId poolId)
+        {
             if (!poolId.IsValid || !_pools.TryGetValue(poolId, out RuntimeObjectPool pool))
             {
                 _unknownPoolFailedRentCount++;
@@ -112,6 +130,23 @@ namespace MonstersVsZombies.Core.Pooling
         }
 
         public PoolReturnResult Return(PooledEntity entity)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+#endif
+            using (SandboxPerformanceDiagnostics.PoolReturnMarker.Auto())
+            {
+                PoolReturnResult result = ReturnInternal(entity);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                SandboxPerformanceDiagnostics.RecordAllocation(
+                    SandboxPerformanceSubsystem.PoolReturn,
+                    GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+#endif
+                return result;
+            }
+        }
+
+        private PoolReturnResult ReturnInternal(PooledEntity entity)
         {
             if (entity == null || !entity.IsOwnedBy(this))
             {
@@ -128,6 +163,23 @@ namespace MonstersVsZombies.Core.Pooling
             }
 
             return pool.Return(entity);
+        }
+
+        public bool TryEnsureInactiveCount(
+            PoolId poolId,
+            int inactiveCount,
+            out PoolFailureReason failureReason)
+        {
+            if (!poolId.IsValid ||
+                !_pools.TryGetValue(poolId, out RuntimeObjectPool pool))
+            {
+                failureReason = PoolFailureReason.UnknownPool;
+                return false;
+            }
+
+            return pool.TryEnsureInactiveCount(
+                inactiveCount,
+                out failureReason);
         }
 
         public bool TryGetDiagnostics(PoolId poolId, out PoolDiagnostics diagnostics)

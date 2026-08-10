@@ -61,11 +61,20 @@ namespace MonstersVsZombies.Diagnostics
         [field: SerializeField] public Toggle AttackRangeToggle { get; private set; }
         [field: SerializeField] public Toggle TargetLineToggle { get; private set; }
         [field: SerializeField] public Toggle SpawnPointToggle { get; private set; }
+        [field: SerializeField] public SandboxStressPresetController StressPresetController { get; private set; }
+        [field: SerializeField] public Button StressTenButton { get; private set; }
+        [field: SerializeField] public Button StressFiftyButton { get; private set; }
+        [field: SerializeField] public Button StressHundredButton { get; private set; }
+        [field: SerializeField] public Text StressStatusText { get; private set; }
         [field: SerializeField] public SandboxSpawnButtonBinding[] SpawnButtons { get; private set; } =
             Array.Empty<SandboxSpawnButtonBinding>();
 
         public string LastInteractionSummary { get; private set; } =
             "Last interaction: none";
+        public bool HasStressPresetControls =>
+            StressPresetController != null && StressTenButton != null &&
+            StressFiftyButton != null && StressHundredButton != null &&
+            StressStatusText != null;
 
         private void Awake()
         {
@@ -172,6 +181,7 @@ namespace MonstersVsZombies.Diagnostics
             PauseAIButtonText.text = SandboxDebugRuntime.AreAIDecisionsPaused
                 ? "Resume AI decisions"
                 : "Pause AI decisions";
+            RefreshStressStatus();
         }
 
         private void RefreshPlayer()
@@ -258,6 +268,19 @@ namespace MonstersVsZombies.Diagnostics
                 () => TargetLineToggle.onValueChanged.RemoveListener(HandleTargetLineToggle));
             _buttonUnsubscriptions.Add(
                 () => SpawnPointToggle.onValueChanged.RemoveListener(HandleSpawnPointToggle));
+
+            if (HasStressPresetControls)
+            {
+                StressTenButton.onClick.AddListener(HandleStressTen);
+                StressFiftyButton.onClick.AddListener(HandleStressFifty);
+                StressHundredButton.onClick.AddListener(HandleStressHundred);
+                _buttonUnsubscriptions.Add(
+                    () => StressTenButton.onClick.RemoveListener(HandleStressTen));
+                _buttonUnsubscriptions.Add(
+                    () => StressFiftyButton.onClick.RemoveListener(HandleStressFifty));
+                _buttonUnsubscriptions.Add(
+                    () => StressHundredButton.onClick.RemoveListener(HandleStressHundred));
+            }
         }
 
         private void ReleaseButtons()
@@ -272,6 +295,7 @@ namespace MonstersVsZombies.Diagnostics
 
         private void HandleClear()
         {
+            StressPresetController?.StopPreset();
             DebugUnitSpawner.ClearNonPlayerUnitsAndProjectiles();
             RefreshPanel();
         }
@@ -307,6 +331,51 @@ namespace MonstersVsZombies.Diagnostics
         private void HandleSpawnPointToggle(bool value)
         {
             GizmoController.DrawSpawnPoints = value;
+        }
+
+        private void HandleStressTen()
+        {
+            RunStressPreset(10);
+        }
+
+        private void HandleStressFifty()
+        {
+            RunStressPreset(50);
+        }
+
+        private void HandleStressHundred()
+        {
+            RunStressPreset(100);
+        }
+
+        private void RunStressPreset(int perFactionCount)
+        {
+            SandboxStressPresetResult result =
+                StressPresetController.RunPreset(perFactionCount);
+            RefreshPanel();
+            StressStatusText.text = result.IsSuccess
+                ? $"Maintaining {perFactionCount} Allies versus {perFactionCount} Enemies"
+                : $"Stress preset failed: {result.PoolFailureReason}, " +
+                  $"Allies {result.SpawnedAllies}/{perFactionCount}, " +
+                  $"Enemies {result.SpawnedEnemies}/{perFactionCount}";
+        }
+
+        private void RefreshStressStatus()
+        {
+            if (!HasStressPresetControls)
+            {
+                return;
+            }
+
+            if (!StressPresetController.IsMaintainingPreset)
+            {
+                StressStatusText.text = "Stress preset: inactive";
+                return;
+            }
+
+            int count = StressPresetController.RequestedPerFaction;
+            StressStatusText.text =
+                $"Maintaining {count} Allies versus {count} Enemies";
         }
 
         private void HandleInteractionResolved(

@@ -233,7 +233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b1ba5cab0f8a0d43a346543be361df4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.TargetingController
-  <QueryCapacity>k__BackingField: 32
+  <QueryCapacity>k__BackingField: 256
   <ScanInterval>k__BackingField: 0.25
   <InitialScanDelay>k__BackingField: 0
 --- !u!114 &5794094724597275396

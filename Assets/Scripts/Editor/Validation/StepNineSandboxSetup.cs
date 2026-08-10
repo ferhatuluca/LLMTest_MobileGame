@@ -36,7 +36,7 @@ namespace MonstersVsZombies.Editor.Validation
         private const string k_UnitCatalogPath =
             "Assets/Data/Catalogs/UC_CombatSandbox.asset";
         private const string k_ScenePath = "Assets/Scenes/CombatSandbox.unity";
-        private const int k_TargetQueryCapacity = 32;
+        private const int k_TargetQueryCapacity = 256;
         private const float k_TargetScanInterval = 0.25f;
         private const float k_TargetInitialDelay = 0f;
 

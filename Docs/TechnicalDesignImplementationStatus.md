@@ -700,7 +700,7 @@ The live verifier used F1 through the real Input System action path. Unity Edito
 **Status:** Complete
 **Completed:** 2026-08-10
 **Commit summary:** `Step 15 completed: validate complete sandbox system`
-**Next step:** Step 16 has not been started.
+**Next step:** Step 16 is in progress; its local, desktop Development-build, and Android-build gates are complete, while the intended-device profile is awaiting a connected authorized Android device.
 
 ### Implemented
 
@@ -742,3 +742,48 @@ The live verifier used F1 through the real Input System action path. Unity Edito
 - The Q/E test first clears non-Player combatants and performs a normal pooled Player reset so weapon definition changes are tested while `AttackController` is Idle. It still drives the real Input System action, `PlayerInputReader` event, and `PlayerWeaponController`; it does not call selection methods directly.
 - The official Input System fixture is isolated to the one keyboard case. The other Play Mode tests deliberately retain the real project Input System runtime while loading and exercising the production scene.
 - The manual checklist is closed from retained, concrete live evidence generated in the earlier numbered steps plus the final complete-system run. No new balance, art, package, or platform assumption was introduced merely to make validation pass.
+
+## Step 16 - Profile, Optimize, and Prepare the Final Sandbox
+
+**Status:** In Progress - intended mobile-device profile pending
+**Started:** 2026-08-10
+**Commit summary:** Pending completion of the intended-device gate
+**Next step:** Connect and authorize the intended Android device, run the representative 10v10, 50v50, and 100v100 Development-build profiles, record the results, then commit Step 16.
+
+### Implemented
+
+- Added saved-scene 10v10, 50v50, and 100v100 stress presets with exact per-faction population maintenance, ordinary pooled spawn/return paths, explicit preset controls in the existing debug panel, and no menu or game-state layer.
+- Added Development-build diagnostics and profiler markers for targeting, AI decisions, attacks, projectiles, pool rent, and pool return, including exact managed-allocation counters, target-query saturation, destination-command counts, and pool creation/peak/overflow snapshots.
+- Added exact on-demand inactive-count prewarming so a requested stress preset reaches its measured steady state without consuming part of its own reserve or instantiating after the measurement warmup.
+- Added a command-line standalone profile runner that loads the existing `CombatSandbox`, applies a requested population, warms it up, measures for a requested duration, optionally forces offscreen rendering, writes a machine-readable report, and exits cleanly.
+- Added Unity Editor automation that wires and verifies the three profiling presets, updates the base-unit target query capacity through prefab serialization, and produces isolated Windows or Android Development builds containing only `CombatSandbox`.
+- Tuned the fixed non-allocating target query capacity from 32 to 256 after observed 50v50 and 100v100 saturation. The final capacity is the smallest power of two above the observed approximately 201 relevant unit colliders; target scan interval values were not changed because the measured cost and saturation gates passed.
+- Added four Edit Mode feature/asset cases and three Play Mode performance cases. The Play Mode cases use a deterministic 60 Hz simulation window after prewarm and fail on population drift, target-buffer saturation, post-prewarm pool growth, or any allocation in the instrumented gameplay paths.
+- Produced ignored handoff builds at `Builds/Step16/Windows/MonstersVsZombies.exe` and `Builds/Step16/Android/MonstersVsZombies-Step16.apk`. These generated binaries are not source-controlled.
+
+### Verification Evidence
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Final clean compilation | A fresh exact project copy compiled in Unity `6000.5.5f1`; `Logs/Step16ProfilingValidatorClean.log` records Tundra success with 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Unity asset automation | `Logs/Step16ProfilingValidatorClean.log` exits successfully after loading and validating the saved `CombatSandbox` preset/controller/button wiring and the 256-entry base-unit query buffer. | Pass |
+| Concrete content validator | `Logs/Step16ConcreteValidatorFinal.log` records all 10 concrete AI definitions and their catalog-backed prefabs verified. | Pass |
+| Complete Edit Mode suite | `Logs/Step16EditModeFinal.xml` records 274 total, 274 passed, 0 failed, 0 skipped. | Pass |
+| Complete Play Mode suite | `Logs/Step16PlayModeFinal.xml` records 17 total, 17 passed, 0 failed, 0 skipped, including all three new performance presets. | Pass |
+| 10v10 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 252, 0 pool-created growth, 136 destination commands, and 0.309 ms measured main-thread sample average. | Pass |
+| 50v50 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 1,140, 0 pool-created growth, 755 destination commands, and 0.923 ms measured main-thread sample average. | Pass |
+| 100v100 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 2,274, 0 pool-created growth, 1,592 destination commands, and 1.462 ms measured main-thread sample average. | Pass |
+| Windows Development build | `Logs/Step16WindowsBuildFinal.log` records a successful Development build containing only `CombatSandbox`, with 0 compiler warnings/errors. | Pass |
+| Five-minute rendered 100v100 soak | `Logs/Step16WindowsFinal100v100Soak.txt` records 300 measured seconds / 132,579 rendered frames, 2.258 ms average and 29.781 ms maximum main-thread sample, 0 gameplay-allocated bytes, 0 saturated scans of 111,845, 0 pool-created growth, 21,867 destination commands, approximately 13 SetPass calls, 735,998 maximum triangles, 643 active renderer/material slots, and 0 invalid renderer bounds. Every participating unit subtype remained at exactly 25 created instances and Bullet/Fireball at exactly 100. | Pass |
+| Android Development build | `Logs/Step16AndroidBuild.log` records a successful IL2CPP Android Development build and a 43,497,619-byte APK. The one Unity build warning is package-cache integrity noise in the disposable validation copy, not a compiler or project-content warning. | Pass |
+| Intended mobile-device repetition | Unity's bundled ADB reports no connected device, and no Android emulator/AVD is installed. No on-device timing, rendering, thermal, memory, or allocation result has been inferred from desktop evidence. | Pending external device |
+| Scope audit | `SampleScene`, Build Settings, packages, layers, input assets, design documents, and design checkboxes remain unchanged. No third-party or paid asset was introduced. | Pass |
+
+The reported `GlobalAllocatedBytes` in the rendered standalone runner includes profiler/reporting, Unity rendering, and runner bookkeeping and is therefore retained as contextual evidence rather than used as the gameplay gate. The required recurring-allocation assertion is the exact sum of targeting, AI, attack, projectile, pool-rent, and pool-return counters; that value remained zero. Unity's player recorder did not expose Draw Calls/Batches counters in this headless capture, so the report retains the available SetPass count and a conservative active material-slot upper bound instead of inventing draw-call data.
+
+### Explicit Profiling Choices
+
+- The steady-state performance mix uses four ordinary combat definitions per faction: Classic Melee, Classic Range, Dragon, and DoubleHead for Allies; Classic Melee, Classic Range, Dragon, and Stunner for Enemies. It includes Bullet and Fireball delivery pressure. Divisible is intentionally excluded because its death-time three-child multiplication cannot preserve an exact steady-state population; Divisible/MiniDivisible behavior remains covered by the Step 15 lifecycle suite. This is a diagnostic workload composition, not a balance change.
+- Unit subtype counts are divided evenly with a deterministic remainder. At 100 per faction this produces exactly 25 of each participating subtype. No health, damage, movement, range, cooldown, cadence, or spawn-formation balance value was changed.
+- Pool prewarm targets are observation-driven for the diagnostic: exact participating unit counts plus 100 inactive Bullet and 100 inactive Fireball instances for 100v100. The five-minute soak confirmed zero post-prewarm creation and peak projectile concurrency well below the retained reserves.
+- The sandbox remains the immediate active scene and retains keyboard/on-screen movement, Q/E weapon selection, HUD, debugging, and normal gameplay systems. Profiling controls extend the existing developer panel rather than introducing a front end or game-state manager.

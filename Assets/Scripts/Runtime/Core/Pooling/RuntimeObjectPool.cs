@@ -10,6 +10,8 @@ namespace MonstersVsZombies.Core.Pooling
     {
         private readonly HashSet<PooledEntity> _activeEntities =
             new HashSet<PooledEntity>();
+        private readonly List<PooledEntity> _prewarmScratch =
+            new List<PooledEntity>();
         private readonly PoolManager _poolManager;
         private readonly PoolCatalogEntry _catalogEntry;
         private readonly ObjectPool<PooledEntity> _objectPool;
@@ -50,12 +52,30 @@ namespace MonstersVsZombies.Core.Pooling
 
         public bool TryPrewarm(out PoolFailureReason failureReason)
         {
-            List<PooledEntity> prewarmedEntities = new List<PooledEntity>(
-                _catalogEntry.InitialPrewarmCount);
+            return TryEnsureInactiveCount(
+                _catalogEntry.InitialPrewarmCount,
+                out failureReason);
+        }
+
+        public bool TryEnsureInactiveCount(
+            int inactiveCount,
+            out PoolFailureReason failureReason)
+        {
+            if (inactiveCount < 0 ||
+                inactiveCount > _catalogEntry.MaximumInactiveRetainedCount)
+            {
+                failureReason = PoolFailureReason.CapacityReached;
+                return false;
+            }
+
+            _prewarmScratch.Clear();
             try
             {
+                int rentCount = _objectPool.CountInactive >= inactiveCount
+                    ? 0
+                    : inactiveCount;
                 for (int prewarmIndex = 0;
-                     prewarmIndex < _catalogEntry.InitialPrewarmCount;
+                     prewarmIndex < rentCount;
                      prewarmIndex++)
                 {
                     PooledEntity entity = _objectPool.Get();
@@ -65,12 +85,16 @@ namespace MonstersVsZombies.Core.Pooling
                         return false;
                     }
 
-                    prewarmedEntities.Add(entity);
+                    _prewarmScratch.Add(entity);
                 }
 
-                foreach (PooledEntity entity in prewarmedEntities)
+                for (int entityIndex = _prewarmScratch.Count - 1;
+                     entityIndex >= 0;
+                     entityIndex--)
                 {
+                    PooledEntity entity = _prewarmScratch[entityIndex];
                     _objectPool.Release(entity);
+                    _prewarmScratch.RemoveAt(entityIndex);
                 }
 
                 failureReason = PoolFailureReason.None;
@@ -85,8 +109,11 @@ namespace MonstersVsZombies.Core.Pooling
             }
             finally
             {
-                foreach (PooledEntity entity in prewarmedEntities)
+                for (int entityIndex = _prewarmScratch.Count - 1;
+                     entityIndex >= 0;
+                     entityIndex--)
                 {
+                    PooledEntity entity = _prewarmScratch[entityIndex];
                     if (entity != null && _objectPool.CountActive > 0)
                     {
                         try
@@ -98,6 +125,8 @@ namespace MonstersVsZombies.Core.Pooling
                         }
                     }
                 }
+
+                _prewarmScratch.Clear();
             }
         }
 

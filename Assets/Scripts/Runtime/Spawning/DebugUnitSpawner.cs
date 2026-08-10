@@ -77,12 +77,42 @@ namespace MonstersVsZombies.Spawning
             UnitDefinition definition,
             Pose spawnPose)
         {
+            return SpawnInternal(definition, spawnPose, true);
+        }
+
+        internal SpawnResult<UnitController> SpawnForStress(
+            UnitDefinition definition)
+        {
+            SpawnPointGroup spawnPointGroup = definition == null
+                ? null
+                : definition.Faction == UnitFaction.Ally
+                    ? AllySpawnPoints
+                    : EnemySpawnPoints;
+            if (spawnPointGroup == null ||
+                !spawnPointGroup.TryGetNext(out Pose spawnPose))
+            {
+                return SpawnResult<UnitController>.CreateFailure(
+                    SpawnFailureReason.InvalidPosition);
+            }
+
+            return SpawnInternal(definition, spawnPose, false);
+        }
+
+        private SpawnResult<UnitController> SpawnInternal(
+            UnitDefinition definition,
+            Pose spawnPose,
+            bool publishDiagnostic)
+        {
             if (SpawnManager == null)
             {
                 SpawnResult<UnitController> unavailableResult =
                     SpawnResult<UnitController>.CreateFailure(
-                    SpawnFailureReason.RentFailed);
-                PublishSpawnDiagnostic(definition, unavailableResult);
+                        SpawnFailureReason.RentFailed);
+                if (publishDiagnostic)
+                {
+                    PublishSpawnDiagnostic(definition, unavailableResult);
+                }
+
                 return unavailableResult;
             }
 
@@ -105,7 +135,11 @@ namespace MonstersVsZombies.Spawning
                 }
             }
 
-            PublishSpawnDiagnostic(definition, result);
+            if (publishDiagnostic)
+            {
+                PublishSpawnDiagnostic(definition, result);
+            }
+
             return result;
         }
 

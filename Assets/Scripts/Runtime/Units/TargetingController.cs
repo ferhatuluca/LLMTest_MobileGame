@@ -71,6 +71,8 @@ namespace MonstersVsZombies.Units
             _queryBuffer != null && _queryBuffer.WasSaturated;
         public int LastUniqueCandidateCount =>
             _queryBuffer == null ? 0 : _queryBuffer.UniqueTargetCount;
+        public int ScanCount { get; private set; }
+        public int SaturatedScanCount { get; private set; }
 
         private void Awake()
         {
@@ -88,7 +90,18 @@ namespace MonstersVsZombies.Units
 
         private void Update()
         {
-            AdvanceTime(Time.deltaTime);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+#endif
+            using (SandboxPerformanceDiagnostics.TargetingMarker.Auto())
+            {
+                AdvanceTime(Time.deltaTime);
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            SandboxPerformanceDiagnostics.RecordAllocation(
+                SandboxPerformanceSubsystem.Targeting,
+                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+#endif
         }
 
         private void OnDestroy()
@@ -186,6 +199,8 @@ namespace MonstersVsZombies.Units
             _scanTimeRemaining = _initialScanDelay;
             _isPreparedForSpawn = false;
             _hasReportedSaturatedQuery = false;
+            ScanCount = 0;
+            SaturatedScanCount = 0;
             Mode = TargetingMode.Disabled;
             _queryRange = 0f;
 
@@ -224,6 +239,8 @@ namespace MonstersVsZombies.Units
             _queryRange = 0f;
             _isPreparedForSpawn = false;
             _hasReportedSaturatedQuery = false;
+            ScanCount = 0;
+            SaturatedScanCount = 0;
         }
 
         internal void AdvanceTime(float deltaTime)
@@ -271,8 +288,14 @@ namespace MonstersVsZombies.Units
                 _queryRange,
                 _unitController.SpawnId,
                 _unitController.Faction);
+            ScanCount++;
+            if (_queryBuffer.WasSaturated)
+            {
+                SaturatedScanCount++;
+            }
 
-            if (_queryBuffer.WasSaturated && !_hasReportedSaturatedQuery)
+            if (_queryBuffer.WasSaturated && !_hasReportedSaturatedQuery &&
+                SandboxDebugRuntime.AreDiagnosticsEnabled)
             {
                 _hasReportedSaturatedQuery = true;
                 SandboxDebugRuntime.Report(
