@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Data
 {
+    /// <summary>
+    /// Stores immutable authored identity, faction, health, and prefab data shared
+    /// by every unit type and provides validation before runtime use.
+    /// </summary>
     public abstract class UnitDefinition : ScriptableObject
     {
         [field: SerializeField] public UnitId UnitId { get; private set; }

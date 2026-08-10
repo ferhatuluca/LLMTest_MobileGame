@@ -19,6 +19,10 @@ namespace MonstersVsZombies.Combat.Interaction
         }
     }
 
+    /// <summary>
+    /// Validates immutable hit context, faction policy, source identity, and
+    /// per-attack deduplication before forwarding damage to DamageController.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class InteractionSystem : MonoBehaviour
     {

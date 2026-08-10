@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Data
 {
+    /// <summary>
+    /// Links a Player-selectable weapon identity to its visible prefab, socket,
+    /// and AttackDefinition.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Combat/Weapon Definition")]
     public sealed class WeaponDefinition : ScriptableObject
     {

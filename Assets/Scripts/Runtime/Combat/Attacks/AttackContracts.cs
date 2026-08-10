@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Captures all source, target, definition, identity, and hit-ledger state an
+    /// executor needs so an attack cannot observe later pooled-state changes.
+    /// </summary>
     public readonly struct AttackExecutionContext
     {
         public UnitController Source { get; }

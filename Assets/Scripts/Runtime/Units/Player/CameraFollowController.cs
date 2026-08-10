@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Maintains the sandbox camera's authored offset from the currently bound
+    /// Player and safely unbinds across pooled Player resets.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
     public sealed class CameraFollowController : MonoBehaviour

@@ -38,6 +38,10 @@ namespace MonstersVsZombies.Units.AI
         }
     }
 
+    /// <summary>
+    /// Converts target range, stun, lifecycle, and cooldown state into the small
+    /// Idle/Chase/Attack decision loop for an AI-controlled unit.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitController))]
     [RequireComponent(typeof(TargetingController))]

@@ -2,6 +2,10 @@ using MonstersVsZombies.Combat.Interaction;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Tracks successful Stunner hit cadence as reusable pure state and resets it
+    /// whenever the owning pooled unit begins a new spawn.
+    /// </summary>
     public sealed class StunnerHitSchedule
     {
         private const int k_HitsBetweenStuns = 3;

@@ -53,6 +53,10 @@ namespace MonstersVsZombies.Combat.Attacks
         }
     }
 
+    /// <summary>
+    /// Owns attack timing and state transitions, captures immutable execution
+    /// context, invokes the selected delivery executor, and resets on reuse.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class AttackController : MonoBehaviour, IPoolable
     {

@@ -753,6 +753,8 @@ The live verifier used F1 through the real Input System action path. Unity Edito
 ### Implemented
 
 - Added saved-scene 10v10, 50v50, and 100v100 stress presets with exact per-faction population maintenance, ordinary pooled spawn/return paths, explicit preset controls in the existing debug panel, and no menu or game-state layer.
+- Added a shared material-property-block faction language: Player renderers are green, Ally renderers are blue, and Enemy renderers are red. Unit visuals recolor from their current spawn definition, Bullet/Fireball/Grenade visuals use the immutable captured source faction, and pooled hitscan beams receive the attacker's faction explicitly. Reuse never clones a material or retains the previous owner's tint.
+- Added concise XML purpose comments to every runtime MonoBehaviour and the major service, policy, pooling, spawning, data, combat, Player, AI, diagnostics, and utility types (75 of 89 runtime files). The remaining files are small enum/immutable-payload declarations or assembly markers.
 - Added Development-build diagnostics and profiler markers for targeting, AI decisions, attacks, projectiles, pool rent, and pool return, including exact managed-allocation counters, target-query saturation, destination-command counts, and pool creation/peak/overflow snapshots.
 - Added exact on-demand inactive-count prewarming so a requested stress preset reaches its measured steady state without consuming part of its own reserve or instantiating after the measurement warmup.
 - Added a command-line standalone profile runner that loads the existing `CombatSandbox`, applies a requested population, warms it up, measures for a requested duration, optionally forces offscreen rendering, writes a machine-readable report, and exits cleanly.
@@ -765,17 +767,17 @@ The live verifier used F1 through the real Input System action path. Unity Edito
 
 | Check | Evidence | Result |
 | --- | --- | --- |
-| Final clean compilation | A fresh exact project copy compiled in Unity `6000.5.5f1`; `Logs/Step16ProfilingValidatorClean.log` records Tundra success with 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
+| Final clean compilation | A fresh exact project copy compiled the final faction-visual and documentation batch in Unity `6000.5.5f1`; `Logs/FactionVisualCommentsCompile2.log` records Tundra success with 0 C# errors, C# warnings, script-compilation failures, unhandled exceptions, assertion exceptions, or missing-reference exceptions. | Pass |
 | Unity asset automation | `Logs/Step16ProfilingValidatorClean.log` exits successfully after loading and validating the saved `CombatSandbox` preset/controller/button wiring and the 256-entry base-unit query buffer. | Pass |
 | Concrete content validator | `Logs/Step16ConcreteValidatorFinal.log` records all 10 concrete AI definitions and their catalog-backed prefabs verified. | Pass |
-| Complete Edit Mode suite | `Logs/Step16EditModeFinal.xml` records 274 total, 274 passed, 0 failed, 0 skipped. | Pass |
-| Complete Play Mode suite | `Logs/Step16PlayModeFinal.xml` records 17 total, 17 passed, 0 failed, 0 skipped, including all three new performance presets. | Pass |
-| 10v10 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 252, 0 pool-created growth, 136 destination commands, and 0.309 ms measured main-thread sample average. | Pass |
-| 50v50 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 1,140, 0 pool-created growth, 755 destination commands, and 0.923 ms measured main-thread sample average. | Pass |
-| 100v100 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 2,274, 0 pool-created growth, 1,592 destination commands, and 1.462 ms measured main-thread sample average. | Pass |
-| Windows Development build | `Logs/Step16WindowsBuildFinal.log` records a successful Development build containing only `CombatSandbox`, with 0 compiler warnings/errors. | Pass |
+| Complete Edit Mode suite | `Logs/FactionVisualEditMode.xml` records 276 total, 276 passed, 0 failed, 0 skipped. The two added cases assert the exact requested colors and prove property-block application does not clone a shared material. | Pass |
+| Complete Play Mode suite | `Logs/FactionVisualPlayMode.xml` records 17 total, 17 passed, 0 failed, 0 skipped, including all three performance presets after the visual changes. | Pass |
+| 10v10 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 252, 0 pool-created growth, 136 destination commands, and 0.467 ms measured main-thread sample average. | Pass |
+| 50v50 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 1,140, 0 pool-created growth, 778 destination commands, and 0.849 ms measured main-thread sample average. | Pass |
+| 100v100 clean-copy profile | 120 measured frames / 2 simulated seconds: 0 gameplay-allocated bytes, 0 saturated scans of 2,355, 0 pool-created growth, 1,673 destination commands, and 1.482 ms measured main-thread sample average. | Pass |
+| Windows Development build | `Logs/FactionVisualWindowsBuild.log` records a successful rebuilt Development player containing only `CombatSandbox`, with 0 warnings/errors. | Pass |
 | Five-minute rendered 100v100 soak | `Logs/Step16WindowsFinal100v100Soak.txt` records 300 measured seconds / 132,579 rendered frames, 2.258 ms average and 29.781 ms maximum main-thread sample, 0 gameplay-allocated bytes, 0 saturated scans of 111,845, 0 pool-created growth, 21,867 destination commands, approximately 13 SetPass calls, 735,998 maximum triangles, 643 active renderer/material slots, and 0 invalid renderer bounds. Every participating unit subtype remained at exactly 25 created instances and Bullet/Fireball at exactly 100. | Pass |
-| Android Development build | `Logs/Step16AndroidBuild.log` records a successful IL2CPP Android Development build and a 43,497,619-byte APK. The one Unity build warning is package-cache integrity noise in the disposable validation copy, not a compiler or project-content warning. | Pass |
+| Android Development build | `Logs/FactionVisualAndroidBuild.log` records a successful rebuilt IL2CPP Android Development player with 0 warnings/errors and a 43,506,075-byte APK. | Pass |
 | Intended mobile-device repetition | Unity's bundled ADB reports no connected device, and no Android emulator/AVD is installed. No on-device timing, rendering, thermal, memory, or allocation result has been inferred from desktop evidence. | Pending external device |
 | Scope audit | `SampleScene`, Build Settings, packages, layers, input assets, design documents, and design checkboxes remain unchanged. No third-party or paid asset was introduced. | Pass |
 

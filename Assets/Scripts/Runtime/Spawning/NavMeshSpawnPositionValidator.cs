@@ -4,6 +4,10 @@ using UnityEngine.AI;
 
 namespace MonstersVsZombies.Spawning
 {
+    /// <summary>
+    /// Validates or samples requested unit positions against the NavMesh before
+    /// a pooled unit is activated.
+    /// </summary>
     public interface ISpawnPositionValidator
     {
         bool TryResolvePosition(

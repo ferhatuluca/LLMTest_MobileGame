@@ -43,6 +43,10 @@ namespace MonstersVsZombies.Units.Player
         }
     }
 
+    /// <summary>
+    /// Owns the Player's ordered weapon slots, visible weapon instances, Q/E
+    /// selection cycle, and AttackController definition binding.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(AttackController))]

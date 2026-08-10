@@ -129,6 +129,54 @@ namespace MonstersVsZombies.Tests.EditMode
             Assert.That(snapshot.PoolReturn.SampleCount, Is.Zero);
         }
 
+        [Test]
+        public void FactionVisuals_UsesRequestedPlayerAllyEnemyColors()
+        {
+            Assert.That(
+                FactionVisuals.TryGetColor(UnitFaction.Player, out Color player),
+                Is.True);
+            Assert.That(player, Is.EqualTo(Color.green));
+            Assert.That(
+                FactionVisuals.TryGetColor(UnitFaction.Ally, out Color ally),
+                Is.True);
+            Assert.That(ally, Is.EqualTo(Color.blue));
+            Assert.That(
+                FactionVisuals.TryGetColor(UnitFaction.Enemy, out Color enemy),
+                Is.True);
+            Assert.That(enemy, Is.EqualTo(Color.red));
+            Assert.That(
+                FactionVisuals.TryGetColor(default, out _),
+                Is.False);
+        }
+
+        [Test]
+        public void FactionVisuals_AppliesColorWithoutCloningMaterial()
+        {
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                Renderer targetRenderer = visual.GetComponent<Renderer>();
+                Material sharedMaterial = targetRenderer.sharedMaterial;
+                MaterialPropertyBlock propertyBlock =
+                    new MaterialPropertyBlock();
+
+                FactionVisuals.Apply(
+                    new[] { targetRenderer },
+                    UnitFaction.Enemy,
+                    propertyBlock);
+
+                targetRenderer.GetPropertyBlock(propertyBlock);
+                Assert.That(
+                    propertyBlock.GetColor(Shader.PropertyToID("_BaseColor")),
+                    Is.EqualTo(Color.red));
+                Assert.That(targetRenderer.sharedMaterial, Is.SameAs(sharedMaterial));
+            }
+            finally
+            {
+                Object.DestroyImmediate(visual);
+            }
+        }
+
         private static void AssertDefinitions(
             AIUnitDefinition[] definitions,
             string[] expectedIds)

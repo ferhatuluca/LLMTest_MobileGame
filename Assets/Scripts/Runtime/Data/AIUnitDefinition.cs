@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Data
 {
+    /// <summary>
+    /// Extends UnitDefinition with AI movement, scan, chase, and attack references
+    /// for Ally and Enemy units.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Units/AI Definition")]
     public sealed class AIUnitDefinition : UnitDefinition
     {

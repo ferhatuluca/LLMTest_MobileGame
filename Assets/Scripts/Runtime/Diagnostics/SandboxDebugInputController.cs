@@ -6,6 +6,10 @@ using UnityEngine.InputSystem;
 
 namespace MonstersVsZombies.Diagnostics
 {
+    /// <summary>
+    /// Binds the development-only SandboxDebug Input System actions to panel,
+    /// spawning, clear, and reset commands.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SandboxDebugInputController : MonoBehaviour
     {

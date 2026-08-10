@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.Lifecycle
 {
+    /// <summary>
+    /// Requests an immediate pooled return when a unit enters Dying, for units
+    /// that have no ordered death effect to finish first.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitLifecycleController))]
     public sealed class ImmediateDeathPoolReturn : MonoBehaviour, IPoolable

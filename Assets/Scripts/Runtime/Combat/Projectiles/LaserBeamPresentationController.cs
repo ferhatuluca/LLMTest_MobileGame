@@ -1,9 +1,15 @@
 using System;
 using MonstersVsZombies.Core.Pooling;
+using MonstersVsZombies.Units;
 using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Projectiles
 {
+    /// <summary>
+    /// Presents a short-lived pooled hitscan beam between two captured points.
+    /// The beam inherits its attacker's faction color and returns itself when
+    /// its presentation lifetime expires.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PooledEntity))]
     public sealed class LaserBeamPresentationController : MonoBehaviour,
@@ -15,6 +21,9 @@ namespace MonstersVsZombies.Combat.Projectiles
         private Vector3 _endPosition;
         private float _elapsedTime;
         private bool _isConfigured;
+        private UnitFaction _sourceFaction;
+        private Renderer[] _factionRenderers;
+        private MaterialPropertyBlock _factionPropertyBlock;
 
         [field: SerializeField] public Transform VisualTransform { get; private set; }
         [field: SerializeField] public float Lifetime { get; private set; }
@@ -24,11 +33,13 @@ namespace MonstersVsZombies.Combat.Projectiles
         private void Awake()
         {
             CacheComponents();
+            CacheFactionVisuals();
         }
 
         private void OnValidate()
         {
             CacheComponents();
+            CacheFactionVisuals();
         }
 
         private void Update()
@@ -39,11 +50,13 @@ namespace MonstersVsZombies.Combat.Projectiles
         public bool ConfigurePresentation(
             Vector3 startPosition,
             Vector3 endPosition,
-            PoolManager poolManager)
+            PoolManager poolManager,
+            UnitFaction sourceFaction)
         {
             if (gameObject.activeInHierarchy || poolManager == null ||
                 !IsFinite(startPosition) || !IsFinite(endPosition) ||
-                (endPosition - startPosition).sqrMagnitude <= Mathf.Epsilon)
+                (endPosition - startPosition).sqrMagnitude <= Mathf.Epsilon ||
+                !FactionVisuals.TryGetColor(sourceFaction, out _))
             {
                 return false;
             }
@@ -51,6 +64,7 @@ namespace MonstersVsZombies.Combat.Projectiles
             _startPosition = startPosition;
             _endPosition = endPosition;
             _poolManager = poolManager;
+            _sourceFaction = sourceFaction;
             _isConfigured = true;
             return true;
         }
@@ -74,6 +88,7 @@ namespace MonstersVsZombies.Combat.Projectiles
             Vector3 visualScale = VisualTransform.localScale;
             visualScale.z = beamLength;
             VisualTransform.localScale = visualScale;
+            ApplyFactionVisuals();
             return true;
         }
 
@@ -90,6 +105,7 @@ namespace MonstersVsZombies.Combat.Projectiles
             _poolManager = null;
             _startPosition = default;
             _endPosition = default;
+            _sourceFaction = default;
             _isConfigured = false;
         }
 
@@ -152,6 +168,25 @@ namespace MonstersVsZombies.Combat.Projectiles
             {
                 VisualTransform = transform.GetChild(0);
             }
+        }
+
+        private void CacheFactionVisuals()
+        {
+            _factionRenderers = GetComponentsInChildren<Renderer>(true);
+            _factionPropertyBlock ??= new MaterialPropertyBlock();
+        }
+
+        private void ApplyFactionVisuals()
+        {
+            if (_factionRenderers == null || _factionPropertyBlock == null)
+            {
+                CacheFactionVisuals();
+            }
+
+            FactionVisuals.Apply(
+                _factionRenderers,
+                _sourceFaction,
+                _factionPropertyBlock);
         }
 
         private static bool IsFinite(Vector3 value)

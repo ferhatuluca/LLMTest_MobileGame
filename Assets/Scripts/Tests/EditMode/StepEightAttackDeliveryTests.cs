@@ -534,7 +534,8 @@ namespace MonstersVsZombies.Tests.EditMode
                 beam.ConfigurePresentation(
                     Vector3.zero,
                     Vector3.right * 2f,
-                    _environment.PoolManager),
+                    _environment.PoolManager,
+                    UnitFaction.Player),
                 Is.True);
             Assert.That(rentResult.Entity.PrepareForSpawn(), Is.True);
             rentResult.Entity.gameObject.SetActive(true);

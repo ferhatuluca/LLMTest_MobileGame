@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Resolves a captured melee impact directly against the selected target
+    /// through InteractionSystem and the attack's hit ledger.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class MeleeAttackExecutor : MonoBehaviour, IAttackExecutor
     {

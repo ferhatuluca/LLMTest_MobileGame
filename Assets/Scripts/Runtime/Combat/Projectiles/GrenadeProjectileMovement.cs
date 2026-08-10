@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Projectiles
 {
+    /// <summary>
+    /// Launches a pooled Rigidbody grenade, resolves its fuse-time area query
+    /// once per target, and returns it after the explosion completes.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody))]
     public sealed class GrenadeProjectileMovement : MonoBehaviour,

@@ -6,6 +6,10 @@ using UnityEngine.Pool;
 
 namespace MonstersVsZombies.Core.Pooling
 {
+    /// <summary>
+    /// Implements one prefab-specific inactive stack, capacity policy, exact
+    /// prewarming, creation statistics, and safe release behavior.
+    /// </summary>
     internal sealed class RuntimeObjectPool
     {
         private readonly HashSet<PooledEntity> _activeEntities =

@@ -41,6 +41,10 @@ namespace MonstersVsZombies.Combat.Health
         }
     }
 
+    /// <summary>
+    /// Is the Unity-facing owner of HealthState: initializes per spawn, applies
+    /// internal damage/healing, and publishes immutable health/death events.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class HealthController : MonoBehaviour
     {

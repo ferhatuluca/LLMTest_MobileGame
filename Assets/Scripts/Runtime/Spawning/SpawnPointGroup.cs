@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
 {
+    /// <summary>
+    /// Selects deterministic positions from an authored group of faction spawn
+    /// points without embedding formation values in spawning services.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SpawnPointGroup : MonoBehaviour
     {

@@ -36,6 +36,10 @@ namespace MonstersVsZombies.Combat.Health
         }
     }
 
+    /// <summary>
+    /// Contains deterministic health math with clamping, one-shot death, and
+    /// rejection of changes after death, independent of Unity callbacks.
+    /// </summary>
     public sealed class HealthState
     {
         public float CurrentHealth { get; private set; }

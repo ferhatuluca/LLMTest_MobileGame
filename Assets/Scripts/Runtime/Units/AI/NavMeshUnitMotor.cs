@@ -6,6 +6,10 @@ using UnityEngine.AI;
 
 namespace MonstersVsZombies.Units.AI
 {
+    /// <summary>
+    /// Adapts IUnitMotor commands to a NavMeshAgent while avoiding redundant
+    /// destination updates and resetting path state on pool reuse.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(UnitController))]

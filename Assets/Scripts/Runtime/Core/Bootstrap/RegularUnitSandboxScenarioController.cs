@@ -9,6 +9,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Bootstrap
 {
+    /// <summary>
+    /// Drives the regular-unit sandbox scenario used to exercise the four common
+    /// Ally and Enemy archetypes through production systems.
+    /// </summary>
     [DefaultExecutionOrder(200)]
     [DisallowMultipleComponent]
     public sealed class RegularUnitSandboxScenarioController : MonoBehaviour

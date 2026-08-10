@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Data
 {
+    /// <summary>
+    /// Authors pooled projectile identity and delivery-specific motion, lifetime,
+    /// gravity, fuse, and area-query configuration.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Combat/Projectile Definition")]
     public sealed class ProjectileDefinition : ScriptableObject
     {

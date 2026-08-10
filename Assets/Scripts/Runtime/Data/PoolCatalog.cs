@@ -74,6 +74,10 @@ namespace MonstersVsZombies.Data
         }
     }
 
+    /// <summary>
+    /// Defines every PoolId, prefab, prewarm count, and inactive-retention policy
+    /// used to initialize PoolManager.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Catalogs/Pool Catalog")]
     public sealed class PoolCatalog : ScriptableObject
     {

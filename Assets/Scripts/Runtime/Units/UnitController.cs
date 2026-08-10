@@ -9,9 +9,17 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units
 {
+    /// <summary>
+    /// Acts as a unit's composition root. It owns spawn identity and cached
+    /// sibling capabilities, while health, damage, movement, targeting, attack,
+    /// status, and lifecycle behavior remain in their dedicated controllers.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class UnitController : MonoBehaviour
     {
+        private Renderer[] _factionRenderers;
+        private MaterialPropertyBlock _factionPropertyBlock;
+
         [field: SerializeField] public UnitDefinition Definition { get; private set; }
 
         public UnitFaction Faction { get; private set; }
@@ -28,11 +36,13 @@ namespace MonstersVsZombies.Units
         private void Awake()
         {
             CacheSiblingComponents();
+            CacheFactionVisuals();
         }
 
         private void OnValidate()
         {
             CacheSiblingComponents();
+            CacheFactionVisuals();
         }
 
         public bool ValidateCoreComponents(out string failureMessage)
@@ -104,6 +114,7 @@ namespace MonstersVsZombies.Units
             Definition = definition;
             Faction = definition.Faction;
             SpawnId = spawnId;
+            ApplyFactionVisuals();
             return true;
         }
 
@@ -150,6 +161,25 @@ namespace MonstersVsZombies.Units
                     break;
                 }
             }
+        }
+
+        private void CacheFactionVisuals()
+        {
+            _factionRenderers = GetComponentsInChildren<Renderer>(true);
+            _factionPropertyBlock ??= new MaterialPropertyBlock();
+        }
+
+        private void ApplyFactionVisuals()
+        {
+            if (_factionRenderers == null || _factionPropertyBlock == null)
+            {
+                CacheFactionVisuals();
+            }
+
+            FactionVisuals.Apply(
+                _factionRenderers,
+                Faction,
+                _factionPropertyBlock);
         }
     }
 }

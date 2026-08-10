@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Bridges Player attack intent to targeting and AttackController while
+    /// enforcing active, alive, and status-effect eligibility.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitController))]
     [RequireComponent(typeof(TargetingController))]

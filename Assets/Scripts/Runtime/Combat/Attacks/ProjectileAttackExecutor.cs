@@ -5,6 +5,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Converts an attack snapshot into a pooled straight-projectile spawn with
+    /// captured damage, source identity, origin, and launch direction.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class ProjectileAttackExecutor : MonoBehaviour, IAttackExecutor
     {

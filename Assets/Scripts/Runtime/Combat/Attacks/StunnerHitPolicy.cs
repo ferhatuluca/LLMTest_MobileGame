@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Adds the authored stun payload only on Stunner cadence hits while leaving
+    /// base damage construction and status application to their normal owners.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AttackController))]
     public sealed class StunnerHitPolicy : MonoBehaviour,

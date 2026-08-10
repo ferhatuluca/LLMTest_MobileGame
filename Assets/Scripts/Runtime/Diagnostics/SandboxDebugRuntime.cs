@@ -33,6 +33,10 @@ namespace MonstersVsZombies.Diagnostics
         }
     }
 
+    /// <summary>
+    /// Provides the Editor/Development-build guard, global AI decision pause, and
+    /// last interaction/spawn diagnostic snapshots used by debug presentation.
+    /// </summary>
     public static class SandboxDebugRuntime
     {
         private static bool s_areAIDecisionsPaused;

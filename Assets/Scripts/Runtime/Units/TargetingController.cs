@@ -33,6 +33,10 @@ namespace MonstersVsZombies.Units
         }
     }
 
+    /// <summary>
+    /// Performs fixed-capacity non-allocating hostile scans, chooses the nearest
+    /// valid target deterministically, and clears stale targets on lifecycle changes.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class TargetingController : MonoBehaviour, IPoolable
     {

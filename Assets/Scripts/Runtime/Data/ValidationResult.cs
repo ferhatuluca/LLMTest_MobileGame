@@ -37,6 +37,10 @@ namespace MonstersVsZombies.Data
         }
     }
 
+    /// <summary>
+    /// Collects structured authoring errors so ScriptableObject catalogs and
+    /// definitions can fail with actionable messages before gameplay starts.
+    /// </summary>
     public sealed class ValidationResult
     {
         private readonly List<ValidationIssue> _issues = new List<ValidationIssue>();

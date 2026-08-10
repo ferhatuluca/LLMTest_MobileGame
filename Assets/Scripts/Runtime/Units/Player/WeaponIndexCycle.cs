@@ -2,6 +2,9 @@ using System;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Provides wrap-around previous/next index math for Player weapon selection.
+    /// </summary>
     public static class WeaponIndexCycle
     {
         public static int GetNextIndex(int currentIndex, int weaponCount)

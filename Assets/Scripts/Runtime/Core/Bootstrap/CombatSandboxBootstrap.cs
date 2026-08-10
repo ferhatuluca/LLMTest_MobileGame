@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Bootstrap
 {
+    /// <summary>
+    /// Establishes the CombatSandbox service graph, initializes pools, performs
+    /// the first Player spawn, and binds Player-facing camera and HUD adapters.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class CombatSandboxBootstrap : MonoBehaviour
     {

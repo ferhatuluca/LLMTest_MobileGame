@@ -4,10 +4,16 @@ using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Combat.Projectiles;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
+using MonstersVsZombies.Units;
 using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Resolves a non-allocating raycast attack, selects the nearest valid world
+    /// or hostile contact, submits damage through InteractionSystem, and spawns
+    /// a pooled beam presentation using the attacker's faction color.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class HitscanAttackExecutor : MonoBehaviour, IAttackExecutor
     {
@@ -146,7 +152,10 @@ namespace MonstersVsZombies.Combat.Attacks
                 }
             }
 
-            TrySpawnBeam(AttackOrigin.position, beamEnd);
+            TrySpawnBeam(
+                AttackOrigin.position,
+                beamEnd,
+                executionContext.Source.Faction);
             ClearCastHits(hitCount);
             return result;
         }
@@ -174,7 +183,10 @@ namespace MonstersVsZombies.Combat.Attacks
             return true;
         }
 
-        private void TrySpawnBeam(Vector3 startPosition, Vector3 endPosition)
+        private void TrySpawnBeam(
+            Vector3 startPosition,
+            Vector3 endPosition,
+            UnitFaction sourceFaction)
         {
             PoolRentResult<PooledEntity> rentResult =
                 PoolManager.Rent(BeamPoolId);
@@ -190,7 +202,8 @@ namespace MonstersVsZombies.Combat.Attacks
                 !beamController.ConfigurePresentation(
                     startPosition,
                     endPosition,
-                    PoolManager) ||
+                    PoolManager,
+                    sourceFaction) ||
                 !pooledEntity.PrepareForSpawn())
             {
                 PoolManager.Return(pooledEntity);

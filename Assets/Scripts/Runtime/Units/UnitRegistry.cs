@@ -19,6 +19,10 @@ namespace MonstersVsZombies.Units
         }
     }
 
+    /// <summary>
+    /// Tracks only logically active units by SpawnId and faction, providing
+    /// allocation-conscious snapshots for targeting and diagnostics.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class UnitRegistry : MonoBehaviour
     {

@@ -5,6 +5,10 @@ using UnityEngine.InputSystem;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Owns Player Input System subscriptions and exposes normalized movement,
+    /// aim, and weapon-cycle intent as gameplay-facing state/events.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerInputReader : MonoBehaviour, IPoolable
     {

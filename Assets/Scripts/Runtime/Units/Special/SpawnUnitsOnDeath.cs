@@ -32,6 +32,10 @@ namespace MonstersVsZombies.Units.Special
         }
     }
 
+    /// <summary>
+    /// Implements Divisible's ordered death effect: spawn exactly three children
+    /// through SpawnManager, then request the parent's pool return.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitController))]
     [RequireComponent(typeof(UnitLifecycleController))]

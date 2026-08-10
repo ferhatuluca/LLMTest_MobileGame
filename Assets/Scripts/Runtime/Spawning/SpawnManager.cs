@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
 {
+    /// <summary>
+    /// Coordinates transactional unit and projectile spawning: rent, configure
+    /// while inactive, reset, activate, finalize, and roll back on any failure.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SpawnManager : MonoBehaviour
     {

@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.AI
 {
+    /// <summary>
+    /// Prevents Ally and Enemy prefab branches from accepting a mismatched unit
+    /// definition during pooled spawn configuration.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitController))]
     public sealed class AIFactionDefinitionGuard : MonoBehaviour, IPoolable

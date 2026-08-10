@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Data
 {
+    /// <summary>
+    /// Defines Player-only movement and weapon data while enforcing the Player faction.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Units/Player Definition")]
     public sealed class PlayerUnitDefinition : UnitDefinition
     {

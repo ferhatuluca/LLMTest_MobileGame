@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Converts camera-relative Player input into CharacterController movement
+    /// and facing while honoring lifecycle and status-effect movement blocks.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerInputReader))]

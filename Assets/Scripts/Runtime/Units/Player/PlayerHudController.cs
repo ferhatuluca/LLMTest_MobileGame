@@ -4,6 +4,10 @@ using UnityEngine.UI;
 
 namespace MonstersVsZombies.Units.Player
 {
+    /// <summary>
+    /// Observes the active Player's health and weapon selection and updates the
+    /// lightweight sandbox HUD without owning gameplay state.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerHudController : MonoBehaviour
     {

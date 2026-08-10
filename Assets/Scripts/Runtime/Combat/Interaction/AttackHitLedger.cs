@@ -5,6 +5,10 @@ using MonstersVsZombies.Core;
 
 namespace MonstersVsZombies.Combat.Interaction
 {
+    /// <summary>
+    /// Tracks which SpawnIds one immutable AttackKey has already resolved so
+    /// overlapping hurtboxes or area queries cannot damage a unit twice.
+    /// </summary>
     public sealed class AttackHitLedger
     {
         private readonly HashSet<SpawnId> _acceptedTargetSpawnIds =

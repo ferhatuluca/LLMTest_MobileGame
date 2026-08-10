@@ -6,10 +6,17 @@ using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Spawning;
+using MonstersVsZombies.Units;
 using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Projectiles
 {
+    /// <summary>
+    /// Owns the pooled projectile lifecycle, captured immutable damage payload,
+    /// per-attack hit ledger, motion adapter, hit resolution, and pool return.
+    /// A projectile is colored from the captured source faction before it is
+    /// activated, so reused bullets and grenades never retain an old owner tint.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PooledEntity))]
     public sealed class ProjectileController : MonoBehaviour,
@@ -27,6 +34,8 @@ namespace MonstersVsZombies.Combat.Projectiles
         private float _elapsedTime;
         private bool _isConfigured;
         private bool _isPreparedForSpawn;
+        private Renderer[] _factionRenderers;
+        private MaterialPropertyBlock _factionPropertyBlock;
 
         public event Action<ProjectileTerminationEvent> Terminated;
 
@@ -39,11 +48,13 @@ namespace MonstersVsZombies.Combat.Projectiles
         private void Awake()
         {
             CacheComponents();
+            CacheFactionVisuals();
         }
 
         private void OnValidate()
         {
             CacheComponents();
+            CacheFactionVisuals();
         }
 
         private void Update()
@@ -91,6 +102,7 @@ namespace MonstersVsZombies.Combat.Projectiles
 
             _spawnRequest = spawnRequest;
             _isConfigured = true;
+            ApplyFactionVisuals(spawnRequest.DamagePayload.SourceFaction);
             return true;
         }
 
@@ -287,6 +299,25 @@ namespace MonstersVsZombies.Combat.Projectiles
 
                 _projectileMotion = projectileMotion;
             }
+        }
+
+        private void CacheFactionVisuals()
+        {
+            _factionRenderers = GetComponentsInChildren<Renderer>(true);
+            _factionPropertyBlock ??= new MaterialPropertyBlock();
+        }
+
+        private void ApplyFactionVisuals(UnitFaction faction)
+        {
+            if (_factionRenderers == null || _factionPropertyBlock == null)
+            {
+                CacheFactionVisuals();
+            }
+
+            FactionVisuals.Apply(
+                _factionRenderers,
+                faction,
+                _factionPropertyBlock);
         }
     }
 }

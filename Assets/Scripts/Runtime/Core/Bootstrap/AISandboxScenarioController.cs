@@ -7,6 +7,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Bootstrap
 {
+    /// <summary>
+    /// Configures the focused AI sandbox scenario and validates its Ally/Enemy
+    /// definitions and runtime services.
+    /// </summary>
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
     public sealed class AISandboxScenarioController : MonoBehaviour

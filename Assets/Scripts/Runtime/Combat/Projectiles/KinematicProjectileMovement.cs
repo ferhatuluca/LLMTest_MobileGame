@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Projectiles
 {
+    /// <summary>
+    /// Advances Bullet and Fireball motion with non-allocating casts, classifies
+    /// the nearest contact, resolves hostile hits, and terminates on world impact.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class KinematicProjectileMovement : MonoBehaviour,
         IProjectileMotion

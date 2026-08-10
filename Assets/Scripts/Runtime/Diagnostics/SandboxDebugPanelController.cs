@@ -33,6 +33,10 @@ namespace MonstersVsZombies.Diagnostics
         }
     }
 
+    /// <summary>
+    /// Owns the Game-view developer panel, its spawn/stress buttons, live HUD-like
+    /// diagnostics, pool table, pause controls, and gizmo toggles.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SandboxDebugPanelController : MonoBehaviour
     {

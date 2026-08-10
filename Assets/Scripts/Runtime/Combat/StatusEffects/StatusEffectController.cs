@@ -25,6 +25,10 @@ namespace MonstersVsZombies.Combat.StatusEffects
         }
     }
 
+    /// <summary>
+    /// Owns active timed status effects. Stun refreshes to the longer remaining
+    /// duration and exposes movement, chase, and attack permission gates.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class StatusEffectController : MonoBehaviour
     {

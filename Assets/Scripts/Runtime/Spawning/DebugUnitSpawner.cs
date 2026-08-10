@@ -12,6 +12,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
 {
+    /// <summary>
+    /// Provides development-only catalog-driven spawn, clear, and Player-reset
+    /// commands while preserving normal SpawnManager and pooling paths.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class DebugUnitSpawner : MonoBehaviour
     {

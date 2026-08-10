@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Pooling
 {
+    /// <summary>
+    /// Aggregates every IPoolable component on one pooled root and executes their
+    /// spawn/return callbacks in a consistent order.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class PooledEntity : MonoBehaviour, IPoolable
     {

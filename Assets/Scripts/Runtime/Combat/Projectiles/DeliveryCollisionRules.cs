@@ -12,6 +12,10 @@ namespace MonstersVsZombies.Combat.Projectiles
         HostileTarget
     }
 
+    /// <summary>
+    /// Centralizes delivery layer masks and contact classification so projectile
+    /// and hitscan paths share identical source/faction/world rules.
+    /// </summary>
     public static class DeliveryCollisionRules
     {
         public const string WorldLayerName = "World";

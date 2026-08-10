@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Interaction
 {
+    /// <summary>
+    /// Maps a hurtbox collider back to its owning unit identity and concrete
+    /// DamageController, allowing multi-collider units to deduplicate correctly.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class DamageTargetProxy : MonoBehaviour, IPoolable
     {

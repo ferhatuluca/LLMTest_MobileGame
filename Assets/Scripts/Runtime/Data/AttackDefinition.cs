@@ -52,6 +52,10 @@ namespace MonstersVsZombies.Data
         }
     }
 
+    /// <summary>
+    /// Authors one attack's damage category, delivery type, range, timing,
+    /// projectile reference, and optional accepted-hit status effect.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Combat/Attack Definition")]
     public sealed class AttackDefinition : ScriptableObject
     {

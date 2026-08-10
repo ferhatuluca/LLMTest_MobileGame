@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Pooling
 {
+    /// <summary>
+    /// Owns all runtime object pools, routes rent/return requests by PoolId, and
+    /// exposes diagnostics without letting callers manipulate pool internals.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class PoolManager : MonoBehaviour
     {

@@ -66,6 +66,10 @@ namespace MonstersVsZombies.Diagnostics
             PoolReturn.AllocatedBytes;
     }
 
+    /// <summary>
+    /// Holds profiler markers and exact Development-build allocation counters for
+    /// the gameplay hot paths required by the final performance gate.
+    /// </summary>
     public static class SandboxPerformanceDiagnostics
     {
         internal static readonly ProfilerMarker TargetingMarker =

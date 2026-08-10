@@ -50,6 +50,10 @@ namespace MonstersVsZombies.Units
         }
     }
 
+    /// <summary>
+    /// Owns the unit state machine from inactive through active, dying, return,
+    /// and reuse, including permanent and per-spawn event subscriptions.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class UnitLifecycleController : MonoBehaviour, IPoolable
     {

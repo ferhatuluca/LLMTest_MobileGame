@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
 {
+    /// <summary>
+    /// Executes the authored initial spawn list after sandbox services are ready
+    /// and records failures for diagnostics.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class InitialSandboxSpawner : MonoBehaviour
     {

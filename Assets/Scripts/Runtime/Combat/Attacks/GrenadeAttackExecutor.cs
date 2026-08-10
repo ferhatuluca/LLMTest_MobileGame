@@ -6,6 +6,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Computes the low ballistic arc for a captured target position and spawns
+    /// a pooled grenade carrying the immutable attack payload.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class GrenadeAttackExecutor : MonoBehaviour, IAttackExecutor
     {

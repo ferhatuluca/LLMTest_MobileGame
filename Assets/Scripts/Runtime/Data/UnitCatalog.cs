@@ -28,6 +28,9 @@ namespace MonstersVsZombies.Data
         }
     }
 
+    /// <summary>
+    /// Maps stable UnitIds to validated UnitDefinitions for spawning and debug tools.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Catalogs/Unit Catalog")]
     public sealed class UnitCatalog : ScriptableObject
     {

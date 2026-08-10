@@ -5,6 +5,10 @@ using MonstersVsZombies.Data;
 
 namespace MonstersVsZombies.Combat.Attacks
 {
+    /// <summary>
+    /// Converts an immutable attack execution snapshot and authored definition
+    /// into the DamagePayload consumed by every delivery implementation.
+    /// </summary>
     public static class AttackPayloadFactory
     {
         public static DamagePayload Create(AttackExecutionContext executionContext)

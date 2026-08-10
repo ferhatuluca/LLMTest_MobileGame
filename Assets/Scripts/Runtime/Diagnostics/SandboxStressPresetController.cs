@@ -34,6 +34,10 @@ namespace MonstersVsZombies.Diagnostics
         }
     }
 
+    /// <summary>
+    /// Prewarms and maintains exact 10v10, 50v50, or 100v100 diagnostic populations
+    /// through the same spawning and pooling services as ordinary gameplay.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SandboxStressPresetController : MonoBehaviour
     {

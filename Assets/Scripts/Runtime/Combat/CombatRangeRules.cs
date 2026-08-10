@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat
 {
+    /// <summary>
+    /// Provides shared squared-distance range checks used by targeting, AI, and
+    /// attack eligibility without square-root work or divergent boundary rules.
+    /// </summary>
     public static class CombatRangeRules
     {
         public static float GetSquaredPlanarDistance(

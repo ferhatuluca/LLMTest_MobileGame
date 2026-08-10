@@ -10,6 +10,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Core.Bootstrap
 {
+    /// <summary>
+    /// Drives the Stunner and Divisible validation scenario, including their
+    /// special lifecycle dependencies and diagnostic state.
+    /// </summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
     public sealed class SpecialUnitSandboxScenarioController : MonoBehaviour

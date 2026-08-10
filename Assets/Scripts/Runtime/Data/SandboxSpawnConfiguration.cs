@@ -33,6 +33,10 @@ namespace MonstersVsZombies.Data
         }
     }
 
+    /// <summary>
+    /// Authors the sandbox's deterministic initial unit list without placing
+    /// gameplay prefab instances directly in the scene.
+    /// </summary>
     [CreateAssetMenu(menuName = "Monsters vs Zombies/Sandbox/Spawn Configuration")]
     public sealed class SandboxSpawnConfiguration : ScriptableObject
     {

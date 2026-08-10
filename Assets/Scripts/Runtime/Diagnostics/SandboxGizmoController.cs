@@ -7,6 +7,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Diagnostics
 {
+    /// <summary>
+    /// Draws optional development gizmos for ranges, targets, faction identity,
+    /// and authored spawn points without affecting release gameplay.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SandboxGizmoController : MonoBehaviour
     {

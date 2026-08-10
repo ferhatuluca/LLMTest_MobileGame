@@ -7,6 +7,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Combat.Interaction
 {
+    /// <summary>
+    /// Reuses fixed collider and target arrays for non-allocating hostile unit
+    /// queries while reporting capacity saturation explicitly.
+    /// </summary>
     public abstract class UnitQueryBuffer
     {
         private const string k_UnitTargetLayerName = "UnitTarget";
@@ -162,6 +166,9 @@ namespace MonstersVsZombies.Combat.Interaction
         }
     }
 
+    /// <summary>
+    /// Selects the nearest candidate with SpawnId tie-breaking for deterministic results.
+    /// </summary>
     public static class NearestTargetRules
     {
         public static bool IsCandidatePreferred(

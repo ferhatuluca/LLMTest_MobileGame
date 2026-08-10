@@ -19,6 +19,10 @@ namespace MonstersVsZombies.Combat.Damage
         }
     }
 
+    /// <summary>
+    /// Is the sole production incoming-damage boundary: validates target state,
+    /// applies modifiers and health damage, then accepts survivor-only effects.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class DamageController : MonoBehaviour
     {

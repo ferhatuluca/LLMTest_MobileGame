@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Units.Special
 {
+    /// <summary>
+    /// Computes deterministic radial candidate positions for MiniDivisible child
+    /// spawns without owning NavMesh validation or spawn policy.
+    /// </summary>
     public static class MiniDivisibleSpawnFormation
     {
         public const int ChildCount = 3;

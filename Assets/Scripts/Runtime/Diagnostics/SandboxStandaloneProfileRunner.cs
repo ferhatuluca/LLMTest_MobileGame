@@ -13,6 +13,10 @@ using UnityEngine;
 
 namespace MonstersVsZombies.Diagnostics
 {
+    /// <summary>
+    /// Runs a command-line Development-build stress capture, writes a deterministic
+    /// text report of gameplay/render/pool metrics, and exits the Player.
+    /// </summary>
     public sealed class SandboxStandaloneProfileRunner : MonoBehaviour
     {
         private const string k_CountArgument = "-mvz-profile-count=";
