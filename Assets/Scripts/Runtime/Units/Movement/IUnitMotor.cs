@@ -15,11 +15,4 @@ namespace MonstersVsZombies.Units.Movement
         void Resume();
     }
 
-    /// <summary>
-    /// Allows AI movement to decide when a NavMesh destination should be refreshed.
-    /// </summary>
-    public interface IDestinationRefreshPolicy
-    {
-        float DestinationRefreshDistance { get; }
-    }
 }

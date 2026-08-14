@@ -83,21 +83,9 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: <AttackDefinition>k__BackingField
       value: 
       objectReference: {fileID: 11400000, guid: b77707cab24dc0d4ea83e0851069f87f, type: 2}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 7957733751247189165}
     - target: {fileID: 4515090486271134745, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: m_Radius
       value: 0.25
@@ -168,9 +156,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7957733751247189165}
-    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7462348598405908405}
   m_SourcePrefab: {fileID: 100100000, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
 --- !u!1 &5092721938068063081 stripped
 GameObject:
@@ -190,18 +175,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.MeleeAttackExecutor
   <InteractionSystem>k__BackingField: {fileID: 0}
---- !u!114 &7462348598405908405
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5092721938068063081}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn
 --- !u!4 &7821326369526469180 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8707705063797716570, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}

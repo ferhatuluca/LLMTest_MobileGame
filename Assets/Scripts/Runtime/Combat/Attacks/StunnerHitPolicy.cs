@@ -14,10 +14,7 @@ namespace MonstersVsZombies.Combat.Attacks
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AttackController))]
-    public sealed class StunnerHitPolicy : MonoBehaviour,
-        IAttackPayloadPolicy,
-        IAttackResultPolicy,
-        IPoolable
+    public sealed class StunnerHitPolicy : MonoBehaviour, IPoolable
     {
         private readonly StunnerHitSchedule _schedule =
             new StunnerHitSchedule();
@@ -63,7 +60,7 @@ namespace MonstersVsZombies.Combat.Attacks
             return true;
         }
 
-        public DamagePayload ModifyPayload(
+        public DamagePayload PreparePayload(
             AttackExecutionContext executionContext,
             DamagePayload basePayload)
         {
@@ -93,9 +90,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 basePayload.DamageCategory);
         }
 
-        public void HandleSuccessfulInteraction(
-            AttackExecutionContext executionContext,
-            InteractionResult interactionResult)
+        public void RecordResult(InteractionResult interactionResult)
         {
             _schedule.RecordInteraction(interactionResult);
         }

@@ -71,21 +71,9 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: <AttackDefinition>k__BackingField
       value: 
       objectReference: {fileID: 11400000, guid: 704f90acd7ee52e4fb5c6818555903d7, type: 2}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 8935677736927053221}
     - target: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: m_Name
       value: PF_Enemy_ClassicMelee
@@ -144,9 +132,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8935677736927053221}
-    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8193638265176293509}
   m_SourcePrefab: {fileID: 100100000, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
 --- !u!4 &846446049102214148 stripped
 Transform:
@@ -171,15 +156,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.MeleeAttackExecutor
   <InteractionSystem>k__BackingField: {fileID: 0}
---- !u!114 &8193638265176293509
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2421031457194681681}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn

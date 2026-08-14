@@ -14,28 +14,12 @@ namespace MonstersVsZombies.Core.Pooling
     {
         private readonly Dictionary<PoolId, RuntimeObjectPool> _pools =
             new Dictionary<PoolId, RuntimeObjectPool>();
-        private int _unknownPoolFailedRentCount;
         private Transform _inactiveCreationRoot;
 
         [field: SerializeField] public PoolCatalog PoolCatalog { get; private set; }
 
         public bool IsInitialized { get; private set; }
-        public int UnknownPoolFailedRentCount => _unknownPoolFailedRentCount;
         internal Transform InactiveCreationRoot => _inactiveCreationRoot;
-
-        public int TotalFailedRentCount
-        {
-            get
-            {
-                int failedRentCount = _unknownPoolFailedRentCount;
-                foreach (RuntimeObjectPool pool in _pools.Values)
-                {
-                    failedRentCount += pool.FailedRentCount;
-                }
-
-                return failedRentCount;
-            }
-        }
 
         private void OnDestroy()
         {
@@ -104,14 +88,8 @@ namespace MonstersVsZombies.Core.Pooling
 
         public PoolRentResult<PooledEntity> Rent(PoolId poolId)
         {
-            return RentInternal(poolId);
-        }
-
-        private PoolRentResult<PooledEntity> RentInternal(PoolId poolId)
-        {
             if (!poolId.IsValid || !_pools.TryGetValue(poolId, out RuntimeObjectPool pool))
             {
-                _unknownPoolFailedRentCount++;
                 return PoolRentResult<PooledEntity>.CreateFailure(
                     poolId,
                     PoolFailureReason.UnknownPool);
@@ -121,11 +99,6 @@ namespace MonstersVsZombies.Core.Pooling
         }
 
         public PoolReturnResult Return(PooledEntity entity)
-        {
-            return ReturnInternal(entity);
-        }
-
-        private PoolReturnResult ReturnInternal(PooledEntity entity)
         {
             if (entity == null || !entity.IsOwnedBy(this))
             {
@@ -142,35 +115,6 @@ namespace MonstersVsZombies.Core.Pooling
             }
 
             return pool.Return(entity);
-        }
-
-        public bool TryEnsureInactiveCount(
-            PoolId poolId,
-            int inactiveCount,
-            out PoolFailureReason failureReason)
-        {
-            if (!poolId.IsValid ||
-                !_pools.TryGetValue(poolId, out RuntimeObjectPool pool))
-            {
-                failureReason = PoolFailureReason.UnknownPool;
-                return false;
-            }
-
-            return pool.TryEnsureInactiveCount(
-                inactiveCount,
-                out failureReason);
-        }
-
-        public bool TryGetDiagnostics(PoolId poolId, out PoolDiagnostics diagnostics)
-        {
-            if (_pools.TryGetValue(poolId, out RuntimeObjectPool pool))
-            {
-                diagnostics = pool.GetDiagnostics();
-                return true;
-            }
-
-            diagnostics = default;
-            return false;
         }
 
         public int CopyDiagnostics(List<PoolDiagnostics> destination)

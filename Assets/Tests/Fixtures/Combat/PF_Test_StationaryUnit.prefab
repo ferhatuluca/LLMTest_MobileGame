@@ -149,9 +149,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 245714590843897351}
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6099317991934575249}
   m_SourcePrefab: {fileID: 100100000, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
 --- !u!4 &124623525415164427 stripped
 Transform:
@@ -163,15 +160,3 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
   m_PrefabInstance: {fileID: 320296794680679580}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6099317991934575249
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3142620929144687454}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn

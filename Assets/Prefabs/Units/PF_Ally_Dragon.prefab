@@ -9,21 +9,9 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       propertyPath: <AttackDefinition>k__BackingField
       value: 
       objectReference: {fileID: 11400000, guid: 6fde912001c31e940bd28f737e742fc4, type: 2}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 1504712086318678482}
     - target: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       propertyPath: m_Name
       value: PF_Ally_Dragon
@@ -82,9 +70,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1504712086318678482}
-    - targetCorrespondingSourceObject: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3985158415774564478}
   m_SourcePrefab: {fileID: 100100000, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
 --- !u!1 &723816237748185008 stripped
 GameObject:
@@ -106,18 +91,6 @@ MonoBehaviour:
   <SpawnManager>k__BackingField: {fileID: 0}
   <InteractionSystem>k__BackingField: {fileID: 0}
   <AttackOrigin>k__BackingField: {fileID: 8786628980870684320}
---- !u!114 &3985158415774564478
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 723816237748185008}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn
 --- !u!4 &2318674802082346725 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8632726445476390085, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}

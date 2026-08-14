@@ -71,21 +71,9 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: <AttackDefinition>k__BackingField
       value: 
       objectReference: {fileID: 11400000, guid: 9a73f8098d14ebb48b32d28482642e53, type: 2}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3275266716014865353, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 187974238607181155}
     - target: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       propertyPath: m_Name
       value: PF_Enemy_Divisible

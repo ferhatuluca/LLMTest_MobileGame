@@ -56,25 +56,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3804553963613874496, guid: 0eee9aff611aa124f8fdbe117d35029c, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6946065962960628931}
   m_SourcePrefab: {fileID: 100100000, guid: 0eee9aff611aa124f8fdbe117d35029c, type: 3}
 --- !u!1 &5976820847056250639 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3804553963613874496, guid: 0eee9aff611aa124f8fdbe117d35029c, type: 3}
   m_PrefabInstance: {fileID: 7367206507071245903}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6946065962960628931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5976820847056250639}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 275d612761bfb374bbcd4c004868e74c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.AI.AIFactionDefinitionGuard
-  <ExpectedFaction>k__BackingField: 3

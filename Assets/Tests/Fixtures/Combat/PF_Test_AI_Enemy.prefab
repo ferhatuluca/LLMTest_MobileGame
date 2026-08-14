@@ -172,9 +172,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3751360119913263905}
-    - targetCorrespondingSourceObject: {fileID: 5976820847056250639, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5260462613252499889}
   m_SourcePrefab: {fileID: 100100000, guid: a257a6ce63dcd38459f887de919c69b5, type: 3}
 --- !u!4 &5415902483837162793 stripped
 Transform:
@@ -199,15 +196,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.MeleeAttackExecutor
   <InteractionSystem>k__BackingField: {fileID: 0}
---- !u!114 &5260462613252499889
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6993865814988457084}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn

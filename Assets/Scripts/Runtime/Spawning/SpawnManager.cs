@@ -4,6 +4,7 @@ using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
 using MonstersVsZombies.Units;
 using MonstersVsZombies.Combat.Interaction;
+using MonstersVsZombies.Combat.Projectiles;
 using UnityEngine;
 
 namespace MonstersVsZombies.Spawning
@@ -111,15 +112,10 @@ namespace MonstersVsZombies.Spawning
             UnitLifecycleController lifecycleController =
                 pooledEntity.GetComponent<UnitLifecycleController>();
             SpawnId spawnId = CreateSpawnId();
-            UnitSpawnContext spawnContext = new UnitSpawnContext(
-                spawnRequest,
-                spawnId);
-
             if (unitController == null || lifecycleController == null ||
                 !lifecycleController.ConfigureSpawn(
                     spawnRequest.Definition,
                     spawnId) ||
-                !ConfigureUnitContextReceivers(pooledEntity, spawnContext) ||
                 !pooledEntity.PrepareForSpawn())
             {
                 ReturnPartialSpawn(pooledEntity);
@@ -137,9 +133,6 @@ namespace MonstersVsZombies.Spawning
             }
 
             lifecycleController.PoolReturnRequested += HandleUnitPoolReturnRequested;
-            lifecycleController.RegisterSpawnSubscription(
-                () => lifecycleController.PoolReturnRequested -=
-                    HandleUnitPoolReturnRequested);
             if (!UnitRegistry.Register(unitController))
             {
                 ReturnPartialSpawn(pooledEntity);
@@ -213,13 +206,13 @@ namespace MonstersVsZombies.Spawning
             pooledEntity.transform.SetPositionAndRotation(
                 spawnRequest.Position,
                 spawnRequest.Rotation);
-            IProjectileSpawnLifecycle projectileLifecycle =
-                FindProjectileLifecycle(pooledEntity);
-            if (projectileLifecycle == null ||
-                !ConfigureProjectileRuntime(
-                    projectileLifecycle,
+            ProjectileController projectile =
+                pooledEntity.GetComponent<ProjectileController>();
+            if (projectile == null ||
+                !projectile.ConfigureProjectileRuntime(
+                    this,
                     interactionSystem) ||
-                !projectileLifecycle.ConfigureProjectileSpawn(spawnRequest) ||
+                !projectile.ConfigureProjectileSpawn(spawnRequest) ||
                 !pooledEntity.PrepareForSpawn())
             {
                 ReturnPartialSpawn(pooledEntity);
@@ -229,7 +222,7 @@ namespace MonstersVsZombies.Spawning
 
             pooledEntity.gameObject.SetActive(true);
             if (!pooledEntity.CompleteSpawn() ||
-                !projectileLifecycle.StartProjectile())
+                !projectile.StartProjectile())
             {
                 ReturnPartialSpawn(pooledEntity);
                 return SpawnResult<PooledEntity>.CreateFailure(
@@ -246,6 +239,14 @@ namespace MonstersVsZombies.Spawning
                 return PoolReturnResult.CreateFailure(
                     default,
                     PoolFailureReason.ForeignEntity);
+            }
+
+            UnitLifecycleController lifecycleController =
+                unitController.LifecycleController;
+            if (lifecycleController != null)
+            {
+                lifecycleController.PoolReturnRequested -=
+                    HandleUnitPoolReturnRequested;
             }
 
             return PoolManager.Return(unitController.GetComponent<PooledEntity>());
@@ -269,58 +270,6 @@ namespace MonstersVsZombies.Spawning
             return new SpawnId(_lastSpawnId);
         }
 
-        private bool ConfigureUnitContextReceivers(
-            PooledEntity pooledEntity,
-            UnitSpawnContext spawnContext)
-        {
-            MonoBehaviour[] behaviours = pooledEntity.GetComponents<MonoBehaviour>();
-            foreach (MonoBehaviour behaviour in behaviours)
-            {
-                if (behaviour is IUnitSpawnContextReceiver receiver &&
-                    !receiver.ConfigureUnitSpawn(spawnContext))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static IProjectileSpawnLifecycle FindProjectileLifecycle(
-            PooledEntity pooledEntity)
-        {
-            MonoBehaviour[] behaviours = pooledEntity.GetComponents<MonoBehaviour>();
-            IProjectileSpawnLifecycle matchingLifecycle = null;
-            foreach (MonoBehaviour behaviour in behaviours)
-            {
-                if (!(behaviour is IProjectileSpawnLifecycle lifecycle))
-                {
-                    continue;
-                }
-
-                if (matchingLifecycle != null)
-                {
-                    return null;
-                }
-
-                matchingLifecycle = lifecycle;
-            }
-
-            return matchingLifecycle;
-        }
-
-        private bool ConfigureProjectileRuntime(
-            IProjectileSpawnLifecycle projectileLifecycle,
-            InteractionSystem interactionSystem)
-        {
-            if (!(projectileLifecycle is IProjectileSpawnRuntimeContextReceiver receiver))
-            {
-                return true;
-            }
-
-            return receiver.ConfigureProjectileRuntime(this, interactionSystem);
-        }
-
         private void HandleUnitPoolReturnRequested(UnitPoolReturnRequest returnRequest)
         {
             ReturnUnit(returnRequest.Unit);
@@ -330,6 +279,14 @@ namespace MonstersVsZombies.Spawning
         {
             if (pooledEntity != null)
             {
+                UnitLifecycleController lifecycleController =
+                    pooledEntity.GetComponent<UnitLifecycleController>();
+                if (lifecycleController != null)
+                {
+                    lifecycleController.PoolReturnRequested -=
+                        HandleUnitPoolReturnRequested;
+                }
+
                 PoolManager.Return(pooledEntity);
             }
         }

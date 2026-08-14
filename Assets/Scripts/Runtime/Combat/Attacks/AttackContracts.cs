@@ -92,34 +92,4 @@ namespace MonstersVsZombies.Combat.Attacks
         InteractionResult ExecuteImpact(AttackExecutionContext executionContext);
     }
 
-    public interface IAttackResultPolicy
-    {
-        void HandleSuccessfulInteraction(
-            AttackExecutionContext executionContext,
-            InteractionResult interactionResult);
-    }
-
-    public interface IAttackPayloadPolicy
-    {
-        DamagePayload ModifyPayload(
-            AttackExecutionContext executionContext,
-            DamagePayload basePayload);
-    }
-
-    [Serializable]
-    public sealed class AttackExecutorBinding
-    {
-        [field: SerializeField] public AttackDeliveryType DeliveryType { get; private set; }
-        [field: SerializeField] public MonoBehaviour ExecutorComponent { get; private set; }
-
-        public IAttackExecutor Executor => ExecutorComponent as IAttackExecutor;
-
-        public AttackExecutorBinding(
-            AttackDeliveryType deliveryType,
-            MonoBehaviour executorComponent)
-        {
-            DeliveryType = deliveryType;
-            ExecutorComponent = executorComponent;
-        }
-    }
 }

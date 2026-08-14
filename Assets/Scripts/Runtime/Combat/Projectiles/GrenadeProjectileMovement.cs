@@ -15,17 +15,17 @@ namespace MonstersVsZombies.Combat.Projectiles
     public sealed class GrenadeProjectileMovement : MonoBehaviour,
         IProjectileMotion
     {
+        private const string k_UnitTargetLayerName = "UnitTarget";
+
         private Rigidbody _rigidbody;
-        private AreaQueryBuffer _areaQueryBuffer;
+        private Collider[] _areaColliders;
         private ProjectileController _projectileController;
         private ProjectileDefinition _projectileDefinition;
 
         [field: SerializeField] public int AreaCapacity { get; private set; }
 
         public AttackDeliveryType DeliveryType => AttackDeliveryType.Grenade;
-        public bool IsInitialized => _areaQueryBuffer != null;
-        public bool WasLastExplosionSaturated { get; private set; }
-        public int LastExplosionTargetCount { get; private set; }
+        public bool IsInitialized => _areaColliders != null;
 
         private void Awake()
         {
@@ -68,7 +68,7 @@ namespace MonstersVsZombies.Combat.Projectiles
             }
 
             AreaCapacity = areaCapacity;
-            _areaQueryBuffer = new AreaQueryBuffer(areaCapacity);
+            _areaColliders = new Collider[areaCapacity];
             return true;
         }
 
@@ -144,8 +144,6 @@ namespace MonstersVsZombies.Combat.Projectiles
             _rigidbody.useGravity = projectileDefinition.GravityScale > 0f;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
-            WasLastExplosionSaturated = false;
-            LastExplosionTargetCount = 0;
             return true;
         }
 
@@ -188,7 +186,10 @@ namespace MonstersVsZombies.Combat.Projectiles
                 _rigidbody.angularVelocity = Vector3.zero;
             }
 
-            _areaQueryBuffer?.Reset();
+            if (_areaColliders != null)
+            {
+                Array.Clear(_areaColliders, 0, _areaColliders.Length);
+            }
             _projectileController = null;
             _projectileDefinition = null;
         }
@@ -201,21 +202,28 @@ namespace MonstersVsZombies.Combat.Projectiles
                 return;
             }
 
-            _areaQueryBuffer.Query(
+            int layer = LayerMask.NameToLayer(k_UnitTargetLayerName);
+            int colliderCount = Physics.OverlapSphereNonAlloc(
                 explosionPosition,
                 _projectileDefinition.ExplosionRadius,
-                _projectileController.DamagePayload.SourceSpawnId,
-                _projectileController.DamagePayload.SourceFaction);
-            WasLastExplosionSaturated = _areaQueryBuffer.WasSaturated;
-            LastExplosionTargetCount = _areaQueryBuffer.UniqueTargetCount;
-            for (int targetIndex = 0;
-                 targetIndex < _areaQueryBuffer.UniqueTargetCount;
-                 targetIndex++)
+                _areaColliders,
+                1 << layer,
+                QueryTriggerInteraction.Collide);
+            for (int colliderIndex = 0;
+                 colliderIndex < colliderCount;
+                 colliderIndex++)
             {
-                _projectileController.ResolveAreaHit(
-                    _areaQueryBuffer.GetTarget(targetIndex),
-                    explosionPosition,
-                    $"Grenade:{_projectileDefinition.PoolId}");
+                Collider targetCollider = _areaColliders[colliderIndex];
+                _areaColliders[colliderIndex] = null;
+                if (targetCollider != null &&
+                    targetCollider.TryGetComponent(
+                        out DamageTargetProxy targetProxy))
+                {
+                    _projectileController.ResolveAreaHit(
+                        targetProxy,
+                        explosionPosition,
+                        $"Grenade:{_projectileDefinition.PoolId}");
+                }
             }
 
             _projectileController.Terminate(
@@ -232,12 +240,12 @@ namespace MonstersVsZombies.Combat.Projectiles
 
         private void EnsureAreaBuffer()
         {
-            if (AreaCapacity <= 0 || _areaQueryBuffer != null)
+            if (AreaCapacity <= 0 || _areaColliders != null)
             {
                 return;
             }
 
-            _areaQueryBuffer = new AreaQueryBuffer(AreaCapacity);
+            _areaColliders = new Collider[AreaCapacity];
         }
     }
 }

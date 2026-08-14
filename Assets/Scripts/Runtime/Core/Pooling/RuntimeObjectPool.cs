@@ -18,13 +18,8 @@ namespace MonstersVsZombies.Core.Pooling
         private readonly PoolManager _poolManager;
         private readonly PoolCatalogEntry _catalogEntry;
         private int _createdCount;
-        private int _peakActiveCount;
-        private int _failedRentCount;
-        private int _capacityReachedCount;
-        private int _overflowDestroyCount;
 
         public PoolId PoolId => _catalogEntry.PoolId;
-        public int FailedRentCount => _failedRentCount;
 
         public RuntimeObjectPool(
             PoolManager poolManager,
@@ -35,35 +30,14 @@ namespace MonstersVsZombies.Core.Pooling
             _catalogEntry = catalogEntry ??
                 throw new ArgumentNullException(nameof(catalogEntry));
 
-            bool collectionChecksEnabled =
-                catalogEntry.EnableCollectionChecks &&
-                (Application.isEditor || Debug.isDebugBuild);
-            CollectionChecksEnabled = collectionChecksEnabled;
         }
-
-        public bool CollectionChecksEnabled { get; }
 
         public bool TryPrewarm(out PoolFailureReason failureReason)
         {
-            return TryEnsureInactiveCount(
-                _catalogEntry.InitialPrewarmCount,
-                out failureReason);
-        }
-
-        public bool TryEnsureInactiveCount(
-            int inactiveCount,
-            out PoolFailureReason failureReason)
-        {
-            if (inactiveCount < 0 ||
-                inactiveCount > _catalogEntry.MaximumInactiveRetainedCount)
-            {
-                failureReason = PoolFailureReason.CapacityReached;
-                return false;
-            }
-
             try
             {
-                while (_inactiveEntities.Count < inactiveCount)
+                while (_inactiveEntities.Count <
+                       _catalogEntry.InitialPrewarmCount)
                 {
                     _inactiveEntities.Push(CreateEntity());
                 }
@@ -74,7 +48,6 @@ namespace MonstersVsZombies.Core.Pooling
             catch (Exception exception)
             {
                 Debug.LogException(exception, _poolManager);
-                _failedRentCount++;
                 failureReason = PoolFailureReason.CreationFailed;
                 return false;
             }
@@ -85,8 +58,6 @@ namespace MonstersVsZombies.Core.Pooling
             if (_catalogEntry.CapacityPolicy == PoolCapacityPolicy.HardActiveLimit &&
                 _activeEntities.Count >= _catalogEntry.MaximumActiveCount)
             {
-                _failedRentCount++;
-                _capacityReachedCount++;
                 return PoolRentResult<PooledEntity>.CreateFailure(
                     PoolId,
                     PoolFailureReason.CapacityReached);
@@ -102,7 +73,6 @@ namespace MonstersVsZombies.Core.Pooling
             catch (Exception exception)
             {
                 Debug.LogException(exception, _poolManager);
-                _failedRentCount++;
                 return PoolRentResult<PooledEntity>.CreateFailure(
                     PoolId,
                     PoolFailureReason.CreationFailed);
@@ -110,7 +80,6 @@ namespace MonstersVsZombies.Core.Pooling
 
             if (entity == null || !entity.MarkRented() || !_activeEntities.Add(entity))
             {
-                _failedRentCount++;
                 if (entity != null)
                 {
                     entity.MarkReturning();
@@ -123,7 +92,6 @@ namespace MonstersVsZombies.Core.Pooling
                     PoolFailureReason.InitializationFailed);
             }
 
-            _peakActiveCount = Math.Max(_peakActiveCount, _activeEntities.Count);
             return PoolRentResult<PooledEntity>.CreateSuccess(PoolId, entity);
         }
 
@@ -160,12 +128,7 @@ namespace MonstersVsZombies.Core.Pooling
                 PoolId,
                 _createdCount,
                 _activeEntities.Count,
-                _inactiveEntities.Count,
-                _peakActiveCount,
-                _failedRentCount,
-                _capacityReachedCount,
-                _overflowDestroyCount,
-                CollectionChecksEnabled);
+                _inactiveEntities.Count);
         }
 
         public void CopyActiveEntities(List<PooledEntity> destination)
@@ -243,7 +206,6 @@ namespace MonstersVsZombies.Core.Pooling
                 return;
             }
 
-            _overflowDestroyCount++;
             DestroyEntity(entity);
         }
 

@@ -18,10 +18,7 @@ namespace MonstersVsZombies.Combat.Projectiles
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PooledEntity))]
-    public sealed class ProjectileController : MonoBehaviour,
-        IPoolable,
-        IProjectileSpawnLifecycle,
-        IProjectileSpawnRuntimeContextReceiver
+    public sealed class ProjectileController : MonoBehaviour, IPoolable
     {
         private readonly AttackHitLedger _hitLedger = new AttackHitLedger();
 

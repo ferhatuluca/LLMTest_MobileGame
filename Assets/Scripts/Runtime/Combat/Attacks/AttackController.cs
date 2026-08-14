@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Interaction;
-using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
@@ -19,27 +17,19 @@ namespace MonstersVsZombies.Combat.Attacks
     }
 
     /// <summary>
-    /// Owns attack timing and state transitions, captures immutable execution
-    /// context, invokes the selected delivery executor, and resets on reuse.
+    /// Owns attack cooldown, windup, impact, and recovery.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AttackController : MonoBehaviour, IPoolable
     {
         private readonly AttackHitLedger _hitLedger = new AttackHitLedger();
-        private readonly List<IAttackResultPolicy> _resultPolicies =
-            new List<IAttackResultPolicy>();
-        private readonly List<IAttackPayloadPolicy> _payloadPolicies =
-            new List<IAttackPayloadPolicy>();
 
-        [SerializeField] private AttackExecutorBinding[] _executorBindings =
-            Array.Empty<AttackExecutorBinding>();
         [field: SerializeField] public AttackDefinition AttackDefinition { get; private set; }
 
         private UnitController _unitController;
         private TargetingController _targetingController;
-        private StatusEffectController _statusEffectController;
-        private UnitLifecycleController _lifecycleController;
         private IAttackExecutor _activeExecutor;
+        private StunnerHitPolicy _stunnerHitPolicy;
         private UnitController _attackTarget;
         private SpawnId _attackTargetSpawnId;
         private long _lastAttackSequence;
@@ -52,20 +42,10 @@ namespace MonstersVsZombies.Combat.Attacks
         public float CooldownRemaining { get; private set; }
         public float WindupRemaining { get; private set; }
         public float RecoveryRemaining { get; private set; }
-        public bool HasActiveSequence => ActiveAttackKey.IsValid;
-        public AttackHitLedger HitLedger => _hitLedger;
 
         private void Awake()
         {
-            CacheSiblingComponents();
-            CacheResultPolicies();
-            EnsurePermanentSubscriptions();
-        }
-
-        private void OnValidate()
-        {
-            CacheSiblingComponents();
-            CacheResultPolicies();
+            CacheComponents();
         }
 
         private void Update()
@@ -73,15 +53,11 @@ namespace MonstersVsZombies.Combat.Attacks
             AdvanceTime(Time.deltaTime);
         }
 
-        private void OnDestroy()
-        {
-            ReleasePermanentSubscriptions();
-        }
-
         public bool SetAttackDefinition(AttackDefinition attackDefinition)
         {
             if (State != AttackTimingState.Idle ||
-                (attackDefinition != null && !attackDefinition.Validate().IsValid))
+                (attackDefinition != null &&
+                 !attackDefinition.Validate().IsValid))
             {
                 return false;
             }
@@ -89,17 +65,15 @@ namespace MonstersVsZombies.Combat.Attacks
             AttackDefinition previousDefinition = AttackDefinition;
             IAttackExecutor previousExecutor = _activeExecutor;
             AttackDefinition = attackDefinition;
-            if (!ResolveActiveExecutor(out _))
+            if (!ResolveExecutor(out _))
             {
                 AttackDefinition = previousDefinition;
                 _activeExecutor = previousExecutor;
                 return false;
             }
 
-            if (_unitController != null &&
-                _unitController.Definition is PlayerUnitDefinition &&
+            if (_unitController?.Definition is PlayerUnitDefinition &&
                 AttackDefinition != null &&
-                _targetingController != null &&
                 !_targetingController.SetPlayerAttackRange(
                     AttackDefinition.AttackRange))
             {
@@ -113,15 +87,11 @@ namespace MonstersVsZombies.Combat.Attacks
 
         public bool ValidateConfiguration(out string failureMessage)
         {
-            CacheSiblingComponents();
-            if (_unitController == null ||
-                _targetingController == null ||
-                _statusEffectController == null ||
-                _lifecycleController == null)
+            CacheComponents();
+            if (_unitController == null || _targetingController == null)
             {
                 failureMessage =
-                    "AttackController requires UnitController, TargetingController, " +
-                    "StatusEffectController, and UnitLifecycleController siblings.";
+                    "AttackController requires UnitController and TargetingController siblings.";
                 return false;
             }
 
@@ -131,112 +101,36 @@ namespace MonstersVsZombies.Combat.Attacks
                 return true;
             }
 
-            if (!AttackDefinition.Validate().IsValid)
-            {
-                failureMessage = "AttackController has an invalid AttackDefinition.";
-                return false;
-            }
-
-            HashSet<AttackDeliveryType> seenDeliveries =
-                new HashSet<AttackDeliveryType>();
-            int matchingExecutorCount = 0;
-            AttackExecutorBinding[] bindings =
-                _executorBindings ?? Array.Empty<AttackExecutorBinding>();
-            foreach (AttackExecutorBinding binding in bindings)
-            {
-                if (binding == null ||
-                    !Enum.IsDefined(
-                        typeof(AttackDeliveryType),
-                        binding.DeliveryType) ||
-                    binding.DeliveryType == AttackDeliveryType.Unspecified ||
-                    binding.Executor == null ||
-                    binding.Executor.DeliveryType != binding.DeliveryType ||
-                    !seenDeliveries.Add(binding.DeliveryType))
-                {
-                    failureMessage =
-                        "AttackController has a missing, duplicate, or incompatible executor binding.";
-                    return false;
-                }
-
-                if (binding.DeliveryType == AttackDefinition.DeliveryType)
-                {
-                    matchingExecutorCount++;
-                }
-            }
-
-            if (matchingExecutorCount != 1)
-            {
-                failureMessage =
-                    "AttackController requires exactly one executor matching its delivery type.";
-                return false;
-            }
-
-            if (_unitController.Definition is AIUnitDefinition && bindings.Length != 1)
-            {
-                failureMessage =
-                    "A fixed AI unit must bind only its configured attack executor.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
+            return ValidateExecutorForDefinition(
+                AttackDefinition,
+                out failureMessage);
         }
 
         public bool ValidateExecutorForDefinition(
             AttackDefinition attackDefinition,
             out string failureMessage)
         {
-            if (attackDefinition == null || !attackDefinition.Validate().IsValid)
+            if (attackDefinition == null ||
+                !attackDefinition.Validate().IsValid)
             {
                 failureMessage = "A valid attack definition is required.";
                 return false;
             }
 
-            int matchingExecutorCount = 0;
-            AttackExecutorBinding[] bindings =
-                _executorBindings ?? Array.Empty<AttackExecutorBinding>();
-            foreach (AttackExecutorBinding binding in bindings)
-            {
-                if (binding == null ||
-                    !Enum.IsDefined(
-                        typeof(AttackDeliveryType),
-                        binding.DeliveryType) ||
-                    binding.DeliveryType == AttackDeliveryType.Unspecified ||
-                    binding.Executor == null ||
-                    binding.Executor.DeliveryType != binding.DeliveryType)
-                {
-                    failureMessage =
-                        "An attack executor binding is missing or incompatible.";
-                    return false;
-                }
-
-                if (binding.DeliveryType == attackDefinition.DeliveryType)
-                {
-                    matchingExecutorCount++;
-                }
-            }
-
-            if (matchingExecutorCount != 1)
-            {
-                failureMessage =
-                    $"Attack delivery '{attackDefinition.DeliveryType}' requires exactly one compatible executor.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
+            int matchCount = CountExecutors(attackDefinition.DeliveryType);
+            failureMessage = matchCount == 1
+                ? string.Empty
+                : $"Attack delivery '{attackDefinition.DeliveryType}' requires exactly one executor component.";
+            return matchCount == 1;
         }
 
         public bool TryStartAttack()
         {
-            CacheSiblingComponents();
             if (!_isPreparedForSpawn || !_isActivationComplete ||
                 State != AttackTimingState.Idle || CooldownRemaining > 0f ||
                 AttackDefinition == null || _activeExecutor == null ||
                 _unitController == null || !_unitController.IsActive ||
-                _statusEffectController == null ||
-                _statusEffectController.IsAttackBlocked ||
-                _targetingController == null ||
+                _unitController.StatusEffectController.IsAttackBlocked ||
                 !_targetingController.IsCurrentTargetWithinRange(
                     AttackDefinition.AttackRange))
             {
@@ -245,7 +139,7 @@ namespace MonstersVsZombies.Combat.Attacks
 
             _attackTarget = _targetingController.CurrentTarget;
             _attackTargetSpawnId = _attackTarget.SpawnId;
-            _lastAttackSequence = checked(_lastAttackSequence + 1);
+            _lastAttackSequence++;
             ActiveAttackKey = new AttackKey(
                 _unitController.SpawnId,
                 new AttackSequenceId(_lastAttackSequence));
@@ -255,7 +149,8 @@ namespace MonstersVsZombies.Combat.Attacks
             RecoveryRemaining = 0f;
             _hasImpacted = false;
             State = AttackTimingState.Windup;
-            _unitController.UnitMotor?.FaceTowards(_attackTarget.transform.position);
+            _unitController.UnitMotor?.FaceTowards(
+                _attackTarget.transform.position);
             if (WindupRemaining <= 0f)
             {
                 RequestImpact();
@@ -267,20 +162,14 @@ namespace MonstersVsZombies.Combat.Attacks
         public bool RequestImpact()
         {
             if (State != AttackTimingState.Windup || _hasImpacted ||
-                !CanContinueWindup(false))
+                !CanContinueAttack())
             {
-                if (State == AttackTimingState.Windup)
-                {
-                    CancelActiveAttack(false);
-                }
-
+                CancelAttack();
                 return false;
             }
 
             if (AttackDefinition.DeliveryType == AttackDeliveryType.Melee &&
-                !CombatRangeRules.IsWithinRange(
-                    transform.position,
-                    _attackTarget.transform.position,
+                !_targetingController.IsCurrentTargetWithinRange(
                     AttackDefinition.AttackRange))
             {
                 BeginRecovery();
@@ -288,73 +177,47 @@ namespace MonstersVsZombies.Combat.Attacks
             }
 
             _hasImpacted = true;
-            AttackExecutionContext baseExecutionContext =
-                new AttackExecutionContext(
-                    _unitController,
-                    _attackTarget,
-                    _targetingController.CurrentTargetPoint,
-                    AttackDefinition,
-                    ActiveAttackKey,
-                    _hitLedger);
-            DamagePayload capturedPayload =
-                AttackPayloadFactory.Create(baseExecutionContext);
-            foreach (IAttackPayloadPolicy payloadPolicy in _payloadPolicies)
+            Vector3 targetPoint = _targetingController.CurrentTargetPoint;
+            AttackExecutionContext context = new AttackExecutionContext(
+                _unitController,
+                _attackTarget,
+                targetPoint,
+                AttackDefinition,
+                ActiveAttackKey,
+                _hitLedger);
+            DamagePayload payload = AttackPayloadFactory.Create(context);
+            if (_stunnerHitPolicy != null)
             {
-                capturedPayload = payloadPolicy.ModifyPayload(
-                    baseExecutionContext,
-                    capturedPayload);
+                payload = _stunnerHitPolicy.PreparePayload(context, payload);
             }
 
-            AttackExecutionContext executionContext =
-                new AttackExecutionContext(
-                    _unitController,
-                    _attackTarget,
-                    _targetingController.CurrentTargetPoint,
-                    AttackDefinition,
-                    ActiveAttackKey,
-                    _hitLedger,
-                    capturedPayload);
-            InteractionResult interactionResult =
-                _activeExecutor.ExecuteImpact(executionContext);
-            if (interactionResult.IsApplied)
-            {
-                foreach (IAttackResultPolicy resultPolicy in _resultPolicies)
-                {
-                    resultPolicy.HandleSuccessfulInteraction(
-                        executionContext,
-                        interactionResult);
-                }
-            }
-
+            context = new AttackExecutionContext(
+                _unitController,
+                _attackTarget,
+                targetPoint,
+                AttackDefinition,
+                ActiveAttackKey,
+                _hitLedger,
+                payload);
+            InteractionResult result = _activeExecutor.ExecuteImpact(context);
+            _stunnerHitPolicy?.RecordResult(result);
             BeginRecovery();
             return true;
         }
 
         public bool PrepareForSpawn()
         {
-            CacheSiblingComponents();
-            CacheResultPolicies();
-            EnsurePermanentSubscriptions();
-            ResetAllTiming();
+            CacheComponents();
+            ResetTiming();
             _isPreparedForSpawn = false;
             _isActivationComplete = false;
 
-            if (_unitController == null ||
-                _unitController.Definition == null ||
-                _targetingController == null ||
-                _statusEffectController == null ||
-                _lifecycleController == null)
-            {
-                return false;
-            }
-
-            if (_unitController.Definition is AIUnitDefinition aiDefinition)
+            if (_unitController?.Definition is AIUnitDefinition aiDefinition)
             {
                 AttackDefinition = aiDefinition.DefaultAttackDefinition;
             }
 
-            if (!ResolveActiveExecutor(out _) ||
-                !ValidateConfiguration(out _))
+            if (!ValidateConfiguration(out _) || !ResolveExecutor(out _))
             {
                 return false;
             }
@@ -380,20 +243,9 @@ namespace MonstersVsZombies.Combat.Attacks
 
         public void PrepareForReturn()
         {
-            ResetAllTiming();
+            ResetTiming();
             _isPreparedForSpawn = false;
             _isActivationComplete = false;
-        }
-
-        internal void ConfigureBindings(
-            AttackDefinition attackDefinition,
-            AttackExecutorBinding[] executorBindings)
-        {
-            AttackDefinition = attackDefinition;
-            _executorBindings = executorBindings == null
-                ? Array.Empty<AttackExecutorBinding>()
-                : (AttackExecutorBinding[])executorBindings.Clone();
-            ResolveActiveExecutor(out _);
         }
 
         internal void AdvanceTime(float deltaTime)
@@ -401,9 +253,7 @@ namespace MonstersVsZombies.Combat.Attacks
             if (deltaTime < 0f || float.IsNaN(deltaTime) ||
                 float.IsInfinity(deltaTime))
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(deltaTime),
-                    "Attack timing delta must be non-negative and finite.");
+                throw new ArgumentOutOfRangeException(nameof(deltaTime));
             }
 
             if (_unitController == null || !_unitController.IsActive)
@@ -414,9 +264,9 @@ namespace MonstersVsZombies.Combat.Attacks
             CooldownRemaining = Mathf.Max(0f, CooldownRemaining - deltaTime);
             if (State == AttackTimingState.Windup)
             {
-                if (!CanContinueWindup(true))
+                if (!CanContinueAttack())
                 {
-                    CancelActiveAttack(false);
+                    CancelAttack();
                     return;
                 }
 
@@ -428,15 +278,18 @@ namespace MonstersVsZombies.Combat.Attacks
             }
             else if (State == AttackTimingState.Recovery)
             {
-                RecoveryRemaining = Mathf.Max(0f, RecoveryRemaining - deltaTime);
+                RecoveryRemaining = Mathf.Max(
+                    0f,
+                    RecoveryRemaining - deltaTime);
                 if (RecoveryRemaining <= 0f)
                 {
-                    CompleteRecovery();
+                    State = AttackTimingState.Idle;
+                    ClearSequence();
                 }
             }
         }
 
-        private bool ResolveActiveExecutor(out string failureMessage)
+        private bool ResolveExecutor(out string failureMessage)
         {
             _activeExecutor = null;
             if (AttackDefinition == null)
@@ -445,75 +298,66 @@ namespace MonstersVsZombies.Combat.Attacks
                 return true;
             }
 
-            AttackExecutorBinding[] bindings =
-                _executorBindings ?? Array.Empty<AttackExecutorBinding>();
-            foreach (AttackExecutorBinding binding in bindings)
+            MonoBehaviour[] components = GetComponents<MonoBehaviour>();
+            foreach (MonoBehaviour component in components)
             {
-                if (binding == null ||
-                    binding.DeliveryType != AttackDefinition.DeliveryType)
+                if (component is IAttackExecutor executor &&
+                    executor.DeliveryType == AttackDefinition.DeliveryType)
                 {
-                    continue;
-                }
+                    if (_activeExecutor != null)
+                    {
+                        failureMessage = "Duplicate attack executor component.";
+                        _activeExecutor = null;
+                        return false;
+                    }
 
-                if (_activeExecutor != null)
-                {
-                    _activeExecutor = null;
-                    failureMessage = "Duplicate executor binding.";
-                    return false;
+                    _activeExecutor = executor;
                 }
-
-                _activeExecutor = binding.Executor;
             }
 
-            if (_activeExecutor == null ||
-                _activeExecutor.DeliveryType != AttackDefinition.DeliveryType)
-            {
-                _activeExecutor = null;
-                failureMessage = "Missing or incompatible executor binding.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
+            failureMessage = _activeExecutor == null
+                ? "Missing attack executor component."
+                : string.Empty;
+            return _activeExecutor != null;
         }
 
-        private bool CanContinueWindup(bool requireAttackRange)
+        private int CountExecutors(AttackDeliveryType deliveryType)
         {
-            return _unitController != null &&
-                   _unitController.IsActive &&
-                   _statusEffectController != null &&
-                   !_statusEffectController.IsAttackBlocked &&
+            int count = 0;
+            foreach (MonoBehaviour component in GetComponents<MonoBehaviour>())
+            {
+                if (component is IAttackExecutor executor &&
+                    executor.DeliveryType == deliveryType)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private bool CanContinueAttack()
+        {
+            return _unitController != null && _unitController.IsActive &&
+                   !_unitController.StatusEffectController.IsAttackBlocked &&
                    _attackTarget != null &&
-                   _attackTargetSpawnId.IsValid &&
                    _attackTarget.SpawnId == _attackTargetSpawnId &&
-                   _targetingController != null &&
-                   _targetingController.CurrentTarget == _attackTarget &&
-                   (!requireAttackRange ||
-                    _targetingController.IsCurrentTargetWithinRange(
-                        AttackDefinition.AttackRange));
+                   _targetingController.CurrentTarget == _attackTarget;
         }
 
         private void BeginRecovery()
         {
-            _hasImpacted = true;
             WindupRemaining = 0f;
             RecoveryRemaining = AttackDefinition.RecoveryDuration;
             State = AttackTimingState.Recovery;
-
             if (RecoveryRemaining <= 0f)
             {
-                CompleteRecovery();
+                State = AttackTimingState.Idle;
+                ClearSequence();
             }
         }
 
-        private void CompleteRecovery()
-        {
-            State = AttackTimingState.Idle;
-            RecoveryRemaining = 0f;
-            ClearActiveSequence();
-        }
-
-        private void CancelActiveAttack(bool resetCommittedTiming)
+        private void CancelAttack()
         {
             if (State != AttackTimingState.Windup)
             {
@@ -523,25 +367,20 @@ namespace MonstersVsZombies.Combat.Attacks
             State = AttackTimingState.Idle;
             WindupRemaining = 0f;
             RecoveryRemaining = 0f;
-            if (resetCommittedTiming)
-            {
-                CooldownRemaining = 0f;
-            }
-
-            ClearActiveSequence();
+            ClearSequence();
         }
 
-        private void ResetAllTiming()
+        private void ResetTiming()
         {
             State = AttackTimingState.Idle;
             CooldownRemaining = 0f;
             WindupRemaining = 0f;
             RecoveryRemaining = 0f;
             _lastAttackSequence = 0;
-            ClearActiveSequence();
+            ClearSequence();
         }
 
-        private void ClearActiveSequence()
+        private void ClearSequence()
         {
             _hitLedger.Reset();
             ActiveAttackKey = default;
@@ -550,97 +389,11 @@ namespace MonstersVsZombies.Combat.Attacks
             _hasImpacted = false;
         }
 
-        private void HandleTargetLost(TargetingEvent targetingEvent)
-        {
-            if (State == AttackTimingState.Windup &&
-                targetingEvent.Target == _attackTarget &&
-                targetingEvent.TargetSpawnId == _attackTargetSpawnId)
-            {
-                CancelActiveAttack(false);
-            }
-        }
-
-        private void HandleStatusEffectChanged(
-            StatusEffectChangedEvent statusEffectEvent)
-        {
-            if (statusEffectEvent.EffectType == StatusEffectType.Stun &&
-                statusEffectEvent.IsActive)
-            {
-                CancelActiveAttack(false);
-            }
-        }
-
-        private void HandleDying(UnitLifecycleChangedEvent lifecycleEvent)
-        {
-            ResetAllTiming();
-        }
-
-        private void CacheSiblingComponents()
+        private void CacheComponents()
         {
             _unitController = GetComponent<UnitController>();
             _targetingController = GetComponent<TargetingController>();
-            _statusEffectController = GetComponent<StatusEffectController>();
-            _lifecycleController = GetComponent<UnitLifecycleController>();
-        }
-
-        private void CacheResultPolicies()
-        {
-            _resultPolicies.Clear();
-            _payloadPolicies.Clear();
-            MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
-            foreach (MonoBehaviour behaviour in behaviours)
-            {
-                if (behaviour != this &&
-                    behaviour is IAttackResultPolicy resultPolicy)
-                {
-                    _resultPolicies.Add(resultPolicy);
-                }
-
-                if (behaviour != this &&
-                    behaviour is IAttackPayloadPolicy payloadPolicy)
-                {
-                    _payloadPolicies.Add(payloadPolicy);
-                }
-            }
-        }
-
-        private void EnsurePermanentSubscriptions()
-        {
-            ReleasePermanentSubscriptions();
-            if (_targetingController != null)
-            {
-                _targetingController.TargetLost += HandleTargetLost;
-            }
-
-            if (_statusEffectController != null)
-            {
-                _statusEffectController.StatusEffectChanged +=
-                    HandleStatusEffectChanged;
-            }
-
-            if (_lifecycleController != null)
-            {
-                _lifecycleController.Dying += HandleDying;
-            }
-        }
-
-        private void ReleasePermanentSubscriptions()
-        {
-            if (_targetingController != null)
-            {
-                _targetingController.TargetLost -= HandleTargetLost;
-            }
-
-            if (_statusEffectController != null)
-            {
-                _statusEffectController.StatusEffectChanged -=
-                    HandleStatusEffectChanged;
-            }
-
-            if (_lifecycleController != null)
-            {
-                _lifecycleController.Dying -= HandleDying;
-            }
+            _stunnerHitPolicy = GetComponent<StunnerHitPolicy>();
         }
     }
 }

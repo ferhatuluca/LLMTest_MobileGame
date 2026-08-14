@@ -76,21 +76,9 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       propertyPath: <AttackDefinition>k__BackingField
       value: 
       objectReference: {fileID: 11400000, guid: 8747eb9af7dc37f40aee0ca443b5eb0b, type: 2}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2481048888569248086, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 1419106784620594516}
     - target: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       propertyPath: m_Name
       value: PF_Ally_ClassicRange
@@ -149,9 +137,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1419106784620594516}
-    - targetCorrespondingSourceObject: {fileID: 6767660700201006480, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2953032879870475712}
   m_SourcePrefab: {fileID: 100100000, guid: 620ee37aaa1909944846e4235aa91df9, type: 3}
 --- !u!4 &5429262566962178865 stripped
 Transform:
@@ -178,15 +163,3 @@ MonoBehaviour:
   <SpawnManager>k__BackingField: {fileID: 0}
   <InteractionSystem>k__BackingField: {fileID: 0}
   <AttackOrigin>k__BackingField: {fileID: 6530103145821461102}
---- !u!114 &2953032879870475712
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7025203033562462820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn

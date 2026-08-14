@@ -60,34 +60,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<DeliveryType>k__BackingField
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[1].<DeliveryType>k__BackingField
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[2].<DeliveryType>k__BackingField
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[0].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 8326126761754034768}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[1].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 6565462646717657329}
-    - target: {fileID: 5794094724597275396, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      propertyPath: _executorBindings.Array.data[2].<ExecutorComponent>k__BackingField
-      value: 
-      objectReference: {fileID: 8822499557697484293}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -116,9 +88,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1557411312787457836}
-    - targetCorrespondingSourceObject: {fileID: 3453479339344254914, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7435690156053863280}
   m_SourcePrefab: {fileID: 100100000, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}
 --- !u!1 &2405353774085312568 stripped
 GameObject:
@@ -258,18 +227,6 @@ MonoBehaviour:
   <BeamPoolId>k__BackingField:
     <Value>k__BackingField: LaserBeam
   <HitscanCastCapacity>k__BackingField: 32
---- !u!114 &7435690156053863280
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2405353774085312568}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8902d74f7fc866947afdfe0c0e92486f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Units.Lifecycle.ImmediateDeathPoolReturn
 --- !u!4 &5336998804570421696 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4943938129399217722, guid: 57de577c2599d5a408c4750f7b9baf0a, type: 3}

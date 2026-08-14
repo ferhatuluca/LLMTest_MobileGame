@@ -48,7 +48,6 @@ namespace MonstersVsZombies.Diagnostics
                 return;
             }
 
-            SandboxDebugRuntime.SetDiagnosticsEnabled(true);
             EnableInput();
         }
 
@@ -60,7 +59,6 @@ namespace MonstersVsZombies.Diagnostics
         private void OnDestroy()
         {
             SandboxDebugRuntime.SetAIDecisionsPaused(false);
-            SandboxDebugRuntime.SetDiagnosticsEnabled(false);
         }
 
         public bool ValidateConfiguration(out string failureMessage)

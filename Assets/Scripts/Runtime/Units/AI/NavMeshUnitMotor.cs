@@ -14,7 +14,7 @@ namespace MonstersVsZombies.Units.AI
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(UnitController))]
     public sealed class NavMeshUnitMotor : MonoBehaviour, IUnitMotor,
-        IDestinationRefreshPolicy, IPoolable
+        IPoolable
     {
         private const int k_AvoidancePriorityCount = 100;
 

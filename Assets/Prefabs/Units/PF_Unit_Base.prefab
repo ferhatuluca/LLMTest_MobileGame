@@ -248,7 +248,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891e62ab89e864045b2dae294bc7ff39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Combat.Attacks.AttackController
-  _executorBindings: []
   <AttackDefinition>k__BackingField: {fileID: 0}
 --- !u!114 &2949181854906249865
 MonoBehaviour:

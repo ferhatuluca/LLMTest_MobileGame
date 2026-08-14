@@ -5,7 +5,6 @@ using MonstersVsZombies.Core.Bootstrap;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Data;
-using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Units;
 using MonstersVsZombies.Units.AI;
 using UnityEngine;
@@ -33,9 +32,9 @@ namespace MonstersVsZombies.Spawning
         [field: SerializeField] public SpawnPointGroup EnemySpawnPoints { get; private set; }
         [field: SerializeField] public CombatSandboxBootstrap Bootstrap { get; private set; }
 
-        public SandboxDiagnosticEvent LastDiagnostic { get; private set; }
+        public string LastMessage { get; private set; } = string.Empty;
 
-        public event Action<SandboxDiagnosticEvent> DiagnosticReported;
+        public event Action<string> SpawnReported;
 
         public bool ValidateConfiguration(out string failureMessage)
         {
@@ -81,42 +80,19 @@ namespace MonstersVsZombies.Spawning
             UnitDefinition definition,
             Pose spawnPose)
         {
-            return SpawnInternal(definition, spawnPose, true);
-        }
-
-        internal SpawnResult<UnitController> SpawnForStress(
-            UnitDefinition definition)
-        {
-            SpawnPointGroup spawnPointGroup = definition == null
-                ? null
-                : definition.Faction == UnitFaction.Ally
-                    ? AllySpawnPoints
-                    : EnemySpawnPoints;
-            if (spawnPointGroup == null ||
-                !spawnPointGroup.TryGetNext(out Pose spawnPose))
-            {
-                return SpawnResult<UnitController>.CreateFailure(
-                    SpawnFailureReason.InvalidPosition);
-            }
-
-            return SpawnInternal(definition, spawnPose, false);
+            return SpawnInternal(definition, spawnPose);
         }
 
         private SpawnResult<UnitController> SpawnInternal(
             UnitDefinition definition,
-            Pose spawnPose,
-            bool publishDiagnostic)
+            Pose spawnPose)
         {
             if (SpawnManager == null)
             {
                 SpawnResult<UnitController> unavailableResult =
                     SpawnResult<UnitController>.CreateFailure(
                         SpawnFailureReason.RentFailed);
-                if (publishDiagnostic)
-                {
-                    PublishSpawnDiagnostic(definition, unavailableResult);
-                }
-
+                PublishSpawnResult(definition, unavailableResult);
                 return unavailableResult;
             }
 
@@ -139,10 +115,7 @@ namespace MonstersVsZombies.Spawning
                 }
             }
 
-            if (publishDiagnostic)
-            {
-                PublishSpawnDiagnostic(definition, result);
-            }
+            PublishSpawnResult(definition, result);
 
             return result;
         }
@@ -155,7 +128,7 @@ namespace MonstersVsZombies.Spawning
                 SpawnResult<UnitController> invalidResult =
                     SpawnResult<UnitController>.CreateFailure(
                         SpawnFailureReason.InvalidDefinition);
-                PublishSpawnDiagnostic(null, invalidResult);
+                PublishSpawnResult(null, invalidResult);
                 return invalidResult;
             }
 
@@ -168,7 +141,7 @@ namespace MonstersVsZombies.Spawning
                 SpawnResult<UnitController> invalidPositionResult =
                     SpawnResult<UnitController>.CreateFailure(
                         SpawnFailureReason.InvalidPosition);
-                PublishSpawnDiagnostic(definition, invalidPositionResult);
+                PublishSpawnResult(definition, invalidPositionResult);
                 return invalidPositionResult;
             }
 
@@ -235,43 +208,17 @@ namespace MonstersVsZombies.Spawning
             return Bootstrap != null && Bootstrap.ResetPlayer();
         }
 
-        private void PublishSpawnDiagnostic(
+        private void PublishSpawnResult(
             UnitDefinition definition,
             SpawnResult<UnitController> result)
         {
-            SandboxDiagnosticCode code = MapDiagnostic(result.FailureReason);
             string definitionName = definition == null
                 ? "<missing definition>"
                 : definition.DisplayName;
-            string message = result.IsSuccess
+            LastMessage = result.IsSuccess
                 ? $"Spawned {definitionName} as {result.Entity.SpawnId}."
                 : $"Could not spawn {definitionName}: {result.FailureReason}.";
-            LastDiagnostic = new SandboxDiagnosticEvent(code, message, this);
-            DiagnosticReported?.Invoke(LastDiagnostic);
-            SandboxDebugRuntime.Report(code, message, this);
-        }
-
-        private static SandboxDiagnosticCode MapDiagnostic(
-            SpawnFailureReason failureReason)
-        {
-            switch (failureReason)
-            {
-                case SpawnFailureReason.None:
-                    return SandboxDiagnosticCode.SpawnSucceeded;
-                case SpawnFailureReason.InvalidDefinition:
-                    return SandboxDiagnosticCode.InvalidDefinition;
-                case SpawnFailureReason.UnknownPool:
-                    return SandboxDiagnosticCode.MissingPool;
-                case SpawnFailureReason.InvalidPosition:
-                    return SandboxDiagnosticCode.InvalidSpawnPosition;
-                case SpawnFailureReason.CapacityReached:
-                    return SandboxDiagnosticCode.CapacityReached;
-                case SpawnFailureReason.ActivationIndependentInitializationFailed:
-                case SpawnFailureReason.ActivationDependentInitializationFailed:
-                    return SandboxDiagnosticCode.InitializationFailed;
-                default:
-                    return SandboxDiagnosticCode.RentFailed;
-            }
+            SpawnReported?.Invoke(LastMessage);
         }
     }
 }

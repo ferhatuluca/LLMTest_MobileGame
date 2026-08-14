@@ -65,21 +65,11 @@ namespace MonstersVsZombies.Diagnostics
         [field: SerializeField] public Toggle AttackRangeToggle { get; private set; }
         [field: SerializeField] public Toggle TargetLineToggle { get; private set; }
         [field: SerializeField] public Toggle SpawnPointToggle { get; private set; }
-        [field: SerializeField] public SandboxStressPresetController StressPresetController { get; private set; }
-        [field: SerializeField] public Button StressTenButton { get; private set; }
-        [field: SerializeField] public Button StressFiftyButton { get; private set; }
-        [field: SerializeField] public Button StressHundredButton { get; private set; }
-        [field: SerializeField] public Text StressStatusText { get; private set; }
         [field: SerializeField] public SandboxSpawnButtonBinding[] SpawnButtons { get; private set; } =
             Array.Empty<SandboxSpawnButtonBinding>();
 
         public string LastInteractionSummary { get; private set; } =
             "Last interaction: none";
-        public bool HasStressPresetControls =>
-            StressPresetController != null && StressTenButton != null &&
-            StressFiftyButton != null && StressHundredButton != null &&
-            StressStatusText != null;
-
         private void Awake()
         {
             BindButtons();
@@ -93,7 +83,6 @@ namespace MonstersVsZombies.Diagnostics
                 return;
             }
 
-            SandboxDebugRuntime.SetDiagnosticsEnabled(true);
             if (InteractionSystem != null)
             {
                 InteractionSystem.InteractionResolved += HandleInteractionResolved;
@@ -101,7 +90,7 @@ namespace MonstersVsZombies.Diagnostics
 
             if (DebugUnitSpawner != null)
             {
-                DebugUnitSpawner.DiagnosticReported += HandleDiagnosticReported;
+                DebugUnitSpawner.SpawnReported += HandleSpawnReported;
             }
 
             _refreshTimeRemaining = 0f;
@@ -117,7 +106,7 @@ namespace MonstersVsZombies.Diagnostics
 
             if (DebugUnitSpawner != null)
             {
-                DebugUnitSpawner.DiagnosticReported -= HandleDiagnosticReported;
+                DebugUnitSpawner.SpawnReported -= HandleSpawnReported;
             }
         }
 
@@ -125,7 +114,6 @@ namespace MonstersVsZombies.Diagnostics
         {
             ReleaseButtons();
             SandboxDebugRuntime.SetAIDecisionsPaused(false);
-            SandboxDebugRuntime.SetDiagnosticsEnabled(false);
         }
 
         private void Update()
@@ -185,7 +173,6 @@ namespace MonstersVsZombies.Diagnostics
             PauseAIButtonText.text = SandboxDebugRuntime.AreAIDecisionsPaused
                 ? "Resume AI decisions"
                 : "Pause AI decisions";
-            RefreshStressStatus();
         }
 
         private void RefreshPlayer()
@@ -212,17 +199,13 @@ namespace MonstersVsZombies.Diagnostics
             PoolManager.CopyDiagnostics(_poolDiagnostics);
             System.Text.StringBuilder builder = new System.Text.StringBuilder(512);
             builder.AppendLine(
-                "Pool | Active | Inactive | Created | Peak | Failed | Capacity | Overflow");
+                "Pool | Active | Inactive | Created");
             foreach (PoolDiagnostics diagnostics in _poolDiagnostics)
             {
                 builder.Append(diagnostics.PoolId).Append(" | ")
                     .Append(diagnostics.ActiveCount).Append(" | ")
                     .Append(diagnostics.InactiveCount).Append(" | ")
-                    .Append(diagnostics.CreatedCount).Append(" | ")
-                    .Append(diagnostics.PeakActiveCount).Append(" | ")
-                    .Append(diagnostics.FailedRentCount).Append(" | ")
-                    .Append(diagnostics.CapacityReachedCount).Append(" | ")
-                    .Append(diagnostics.OverflowDestroyCount).AppendLine();
+                    .Append(diagnostics.CreatedCount).AppendLine();
             }
 
             PoolCountsText.text = builder.ToString();
@@ -273,18 +256,6 @@ namespace MonstersVsZombies.Diagnostics
             _buttonUnsubscriptions.Add(
                 () => SpawnPointToggle.onValueChanged.RemoveListener(HandleSpawnPointToggle));
 
-            if (HasStressPresetControls)
-            {
-                StressTenButton.onClick.AddListener(HandleStressTen);
-                StressFiftyButton.onClick.AddListener(HandleStressFifty);
-                StressHundredButton.onClick.AddListener(HandleStressHundred);
-                _buttonUnsubscriptions.Add(
-                    () => StressTenButton.onClick.RemoveListener(HandleStressTen));
-                _buttonUnsubscriptions.Add(
-                    () => StressFiftyButton.onClick.RemoveListener(HandleStressFifty));
-                _buttonUnsubscriptions.Add(
-                    () => StressHundredButton.onClick.RemoveListener(HandleStressHundred));
-            }
         }
 
         private void ReleaseButtons()
@@ -299,7 +270,6 @@ namespace MonstersVsZombies.Diagnostics
 
         private void HandleClear()
         {
-            StressPresetController?.StopPreset();
             DebugUnitSpawner.ClearNonPlayerUnitsAndProjectiles();
             RefreshPanel();
         }
@@ -337,51 +307,6 @@ namespace MonstersVsZombies.Diagnostics
             GizmoController.DrawSpawnPoints = value;
         }
 
-        private void HandleStressTen()
-        {
-            RunStressPreset(10);
-        }
-
-        private void HandleStressFifty()
-        {
-            RunStressPreset(50);
-        }
-
-        private void HandleStressHundred()
-        {
-            RunStressPreset(100);
-        }
-
-        private void RunStressPreset(int perFactionCount)
-        {
-            SandboxStressPresetResult result =
-                StressPresetController.RunPreset(perFactionCount);
-            RefreshPanel();
-            StressStatusText.text = result.IsSuccess
-                ? $"Maintaining {perFactionCount} Allies versus {perFactionCount} Enemies"
-                : $"Stress preset failed: {result.PoolFailureReason}, " +
-                  $"Allies {result.SpawnedAllies}/{perFactionCount}, " +
-                  $"Enemies {result.SpawnedEnemies}/{perFactionCount}";
-        }
-
-        private void RefreshStressStatus()
-        {
-            if (!HasStressPresetControls)
-            {
-                return;
-            }
-
-            if (!StressPresetController.IsMaintainingPreset)
-            {
-                StressStatusText.text = "Stress preset: inactive";
-                return;
-            }
-
-            int count = StressPresetController.RequestedPerFaction;
-            StressStatusText.text =
-                $"Maintaining {count} Allies versus {count} Enemies";
-        }
-
         private void HandleInteractionResolved(
             InteractionResolvedEvent interactionEvent)
         {
@@ -394,15 +319,10 @@ namespace MonstersVsZombies.Diagnostics
             LastInteractionText.text = LastInteractionSummary;
         }
 
-        private void HandleDiagnosticReported(
-            SandboxDiagnosticEvent diagnosticEvent)
+        private void HandleSpawnReported(string message)
         {
-            if (diagnosticEvent.Code != SandboxDiagnosticCode.SpawnSucceeded)
-            {
-                LastInteractionSummary =
-                    $"Last diagnostic: {diagnosticEvent.Code} - {diagnosticEvent.Message}";
-                LastInteractionText.text = LastInteractionSummary;
-            }
+            LastInteractionSummary = message;
+            LastInteractionText.text = LastInteractionSummary;
         }
     }
 }

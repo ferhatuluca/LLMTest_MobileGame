@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Health;
 using MonstersVsZombies.Combat.StatusEffects;
@@ -51,53 +50,47 @@ namespace MonstersVsZombies.Units
     }
 
     /// <summary>
-    /// Owns the unit state machine from inactive through active, dying, return,
-    /// and reuse, including permanent and per-spawn event subscriptions.
+    /// Activates units, publishes death, and resets them for pool reuse.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class UnitLifecycleController : MonoBehaviour, IPoolable
     {
-        private readonly List<Action> _spawnUnsubscriptions = new List<Action>();
         private UnitController _unitController;
         private HealthController _healthController;
         private StatusEffectController _statusEffectController;
         private DamageController _damageController;
-        private HealthController _subscribedHealthController;
         private bool _isPreparedForSpawn;
         private bool _isActivationComplete;
-        private bool _hasPublishedDespawn;
-        private bool _isPublishingLifecycleEvents;
-        private bool _isPoolReturnRequested;
-        private bool _isFinalizingActivation;
+        private bool _isPublishingDeath;
+        private bool _returnRequested;
 
-        public event Action<UnitLifecycleChangedEvent> StateChanged;
-        public event Action<UnitLifecycleChangedEvent> Spawned;
         public event Action<UnitLifecycleChangedEvent> Dying;
         public event Action<UnitLifecycleChangedEvent> Despawned;
         public event Action<UnitPoolReturnRequest> PoolReturnRequested;
 
-        public UnitLifecycleState State { get; private set; } = UnitLifecycleState.Inactive;
+        public UnitLifecycleState State { get; private set; } =
+            UnitLifecycleState.Inactive;
 
         private void Awake()
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
+            CacheComponents();
+            if (_healthController != null)
+            {
+                _healthController.Died += HandleUnitDied;
+            }
         }
 
         private void OnDestroy()
         {
-            ReleaseSpawnSubscriptions();
-            if (_subscribedHealthController != null)
+            if (_healthController != null)
             {
-                _subscribedHealthController.Died -= HandleUnitDied;
-                _subscribedHealthController = null;
+                _healthController.Died -= HandleUnitDied;
             }
         }
 
         internal bool ConfigureSpawn(UnitDefinition definition, SpawnId spawnId)
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
+            CacheComponents();
             return State == UnitLifecycleState.Inactive &&
                    !_isPreparedForSpawn &&
                    _unitController != null &&
@@ -106,19 +99,15 @@ namespace MonstersVsZombies.Units
 
         public bool PrepareForSpawn()
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
-            ReleaseSpawnSubscriptions();
-
-            if (gameObject.activeInHierarchy ||
-                _unitController == null ||
+            CacheComponents();
+            _isPreparedForSpawn = false;
+            if (gameObject.activeInHierarchy || _unitController == null ||
                 !_unitController.ValidateCoreComponents(out _) ||
                 _unitController.Definition == null ||
                 !_unitController.SpawnId.IsValid ||
-                _healthController == null ||
-                !_healthController.InitializeForSpawn(_unitController.Definition))
+                !_healthController.InitializeForSpawn(
+                    _unitController.Definition))
             {
-                _isPreparedForSpawn = false;
                 return false;
             }
 
@@ -129,250 +118,134 @@ namespace MonstersVsZombies.Units
             State = UnitLifecycleState.Inactive;
             _isPreparedForSpawn = true;
             _isActivationComplete = false;
-            _hasPublishedDespawn = false;
-            _isPoolReturnRequested = false;
+            _returnRequested = false;
             return true;
         }
 
         public bool CompleteSpawn()
         {
-            _isActivationComplete = _isPreparedForSpawn && gameObject.activeInHierarchy;
+            _isActivationComplete =
+                _isPreparedForSpawn && gameObject.activeInHierarchy;
             return _isActivationComplete;
         }
 
         internal bool ActivateSpawn()
         {
             if (!_isPreparedForSpawn || !_isActivationComplete ||
-                !gameObject.activeInHierarchy || State != UnitLifecycleState.Inactive ||
-                _healthController == null || !_healthController.IsAlive)
+                State != UnitLifecycleState.Inactive ||
+                !_healthController.IsAlive)
             {
                 return false;
             }
 
             _unitController.MarkActive();
-            _isFinalizingActivation = true;
-            _isPublishingLifecycleEvents = true;
-            try
-            {
-                UnitLifecycleChangedEvent lifecycleEvent = TransitionTo(
-                    UnitLifecycleState.Active,
-                    _unitController.SpawnId);
-                _unitController.UnitMotor?.Resume();
-                Spawned?.Invoke(lifecycleEvent);
-            }
-            finally
-            {
-                _isPublishingLifecycleEvents = false;
-                _isFinalizingActivation = false;
-            }
-
-            return State == UnitLifecycleState.Active && _unitController.IsActive;
+            State = UnitLifecycleState.Active;
+            _unitController.UnitMotor?.Resume();
+            return true;
         }
 
         public void PrepareForReturn()
         {
-            if (_isPublishingLifecycleEvents)
-            {
-                throw new InvalidOperationException(
-                    "Request a pool return during lifecycle events instead of starting the pool callback reentrantly.");
-            }
-
-            PerformReturn();
-        }
-
-        private void PerformReturn()
-        {
-            CacheSiblingComponents();
-            bool wasLogicalSpawn = State == UnitLifecycleState.Active ||
-                                   State == UnitLifecycleState.Dying;
-            SpawnId returningSpawnId = _unitController == null
+            CacheComponents();
+            SpawnId spawnId = _unitController == null
                 ? default
                 : _unitController.SpawnId;
+            bool shouldPublishDespawn =
+                State == UnitLifecycleState.Active && spawnId.IsValid;
 
-            bool hasConfiguredSpawn = returningSpawnId.IsValid;
-            _isPublishingLifecycleEvents = true;
-            try
+            _unitController?.MarkInactive();
+            if (shouldPublishDespawn)
             {
-                if (_unitController != null)
-                {
-                    _unitController.MarkInactive();
-                }
-
-                if (hasConfiguredSpawn)
-                {
-                    UnitLifecycleChangedEvent poolReturnEvent = TransitionTo(
-                        UnitLifecycleState.PoolReturn,
-                        returningSpawnId);
-                    if (wasLogicalSpawn && !_hasPublishedDespawn)
-                    {
-                        _hasPublishedDespawn = true;
-                        Despawned?.Invoke(poolReturnEvent);
-                    }
-                }
-                else
-                {
-                    State = UnitLifecycleState.Inactive;
-                }
-
-                ReleaseSpawnSubscriptions();
-                _unitController?.UnitMotor?.Stop();
-                _statusEffectController?.ClearForReturn();
-                _damageController?.ResetForSpawn();
-                if (hasConfiguredSpawn)
-                {
-                    TransitionTo(UnitLifecycleState.Inactive, returningSpawnId);
-                }
-
-                _isPreparedForSpawn = false;
-                _isActivationComplete = false;
-                _unitController?.ClearSpawnIdentity();
-            }
-            finally
-            {
-                _isPublishingLifecycleEvents = false;
+                UnitLifecycleState previousState = State;
+                State = UnitLifecycleState.PoolReturn;
+                Despawned?.Invoke(new UnitLifecycleChangedEvent(
+                    _unitController,
+                    spawnId,
+                    previousState,
+                    State));
             }
 
-            _isPoolReturnRequested = false;
+            _unitController?.UnitMotor?.Stop();
+            _statusEffectController?.ClearForReturn();
+            _damageController?.ResetForSpawn();
+            State = UnitLifecycleState.Inactive;
+            _isPreparedForSpawn = false;
+            _isActivationComplete = false;
+            _returnRequested = false;
+            _unitController?.ClearSpawnIdentity();
         }
 
         public void RequestPoolReturn()
         {
-            if (_isFinalizingActivation)
-            {
-                throw new InvalidOperationException(
-                    "A pool return cannot be requested while logical spawn activation is being finalized.");
-            }
-
-            if (State != UnitLifecycleState.Active && State != UnitLifecycleState.Dying)
+            if (State != UnitLifecycleState.Active &&
+                State != UnitLifecycleState.Dying)
             {
                 return;
             }
 
-            _isPoolReturnRequested = true;
-            if (!_isPublishingLifecycleEvents)
+            _returnRequested = true;
+            if (!_isPublishingDeath)
             {
-                PublishPendingPoolReturnRequest();
+                PublishReturnRequest();
             }
-        }
-
-        public void RegisterSpawnSubscription(Action unsubscribeAction)
-        {
-            if (unsubscribeAction == null)
-            {
-                throw new ArgumentNullException(nameof(unsubscribeAction));
-            }
-
-            if (State != UnitLifecycleState.Active)
-            {
-                throw new InvalidOperationException(
-                    "Per-spawn subscriptions can only be registered for an active spawn.");
-            }
-
-            _spawnUnsubscriptions.Add(unsubscribeAction);
         }
 
         private void HandleUnitDied(UnitDeathEvent deathEvent)
         {
             if (State != UnitLifecycleState.Active ||
-                _unitController == null ||
                 deathEvent.SpawnId != _unitController.SpawnId)
             {
                 return;
             }
 
-            SpawnId dyingSpawnId = _unitController.SpawnId;
+            SpawnId spawnId = _unitController.SpawnId;
+            UnitLifecycleState previousState = State;
+            State = UnitLifecycleState.Dying;
             _unitController.MarkInactive();
-            _hasPublishedDespawn = true;
-            _isPublishingLifecycleEvents = true;
+            _unitController.UnitMotor?.Stop();
+            _statusEffectController.ClearForDeath();
+            UnitLifecycleChangedEvent lifecycleEvent =
+                new UnitLifecycleChangedEvent(
+                    _unitController,
+                    spawnId,
+                    previousState,
+                    State);
+
+            _isPublishingDeath = true;
             try
             {
-                UnitLifecycleChangedEvent lifecycleEvent = TransitionTo(
-                    UnitLifecycleState.Dying,
-                    dyingSpawnId);
-                _unitController.UnitMotor?.Stop();
-                _statusEffectController?.ClearForDeath();
                 Dying?.Invoke(lifecycleEvent);
                 Despawned?.Invoke(lifecycleEvent);
             }
             finally
             {
-                _isPublishingLifecycleEvents = false;
+                _isPublishingDeath = false;
             }
 
-            PublishPendingPoolReturnRequest();
+            _returnRequested = true;
+            PublishReturnRequest();
         }
 
-        private UnitLifecycleChangedEvent TransitionTo(
-            UnitLifecycleState nextState,
-            SpawnId spawnId)
+        private void PublishReturnRequest()
         {
-            UnitLifecycleState previousState = State;
-            State = nextState;
-            UnitLifecycleChangedEvent lifecycleEvent = new UnitLifecycleChangedEvent(
-                _unitController,
-                spawnId,
-                previousState,
-                State);
-            StateChanged?.Invoke(lifecycleEvent);
-            return lifecycleEvent;
-        }
-
-        private void PublishPendingPoolReturnRequest()
-        {
-            if (!_isPoolReturnRequested)
+            if (!_returnRequested)
             {
                 return;
             }
 
-            _isPoolReturnRequested = false;
-            if (State != UnitLifecycleState.Active && State != UnitLifecycleState.Dying)
-            {
-                return;
-            }
-
+            _returnRequested = false;
             PoolReturnRequested?.Invoke(new UnitPoolReturnRequest(
                 _unitController,
                 _unitController == null ? default : _unitController.SpawnId));
         }
 
-        private void ReleaseSpawnSubscriptions()
-        {
-            for (int subscriptionIndex = _spawnUnsubscriptions.Count - 1;
-                 subscriptionIndex >= 0;
-                 subscriptionIndex--)
-            {
-                _spawnUnsubscriptions[subscriptionIndex]?.Invoke();
-            }
-
-            _spawnUnsubscriptions.Clear();
-        }
-
-        private void CacheSiblingComponents()
+        private void CacheComponents()
         {
             _unitController = GetComponent<UnitController>();
             _healthController = GetComponent<HealthController>();
             _statusEffectController = GetComponent<StatusEffectController>();
             _damageController = GetComponent<DamageController>();
             _unitController?.CacheSiblingComponents();
-        }
-
-        private void EnsurePermanentSubscriptions()
-        {
-            if (_subscribedHealthController == _healthController)
-            {
-                return;
-            }
-
-            if (_subscribedHealthController != null)
-            {
-                _subscribedHealthController.Died -= HandleUnitDied;
-            }
-
-            _subscribedHealthController = _healthController;
-            if (_subscribedHealthController != null)
-            {
-                _subscribedHealthController.Died += HandleUnitDied;
-            }
         }
     }
 }

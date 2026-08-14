@@ -48,9 +48,9 @@ Do not split these components further unless a concrete feature makes the curren
 
 ### Combat flow
 
-1. `TargetingController` selects a hostile active unit.
+1. `TargetingController` scans the `UnitTarget` layer and selects the nearest hostile active unit.
 2. `AttackController` starts an attack when cooldown and range allow it.
-3. The selected executor delivers melee, projectile, grenade, or hitscan impact.
+3. The matching executor component delivers melee, projectile, grenade, or hitscan impact.
 4. `InteractionSystem` rejects invalid faction, self, inactive, dead, invulnerable, or duplicate hits.
 5. `DamageController` forwards accepted damage to `HealthController` and accepted status effects to `StatusEffectController`.
 6. Death is handled by `UnitLifecycleController`; special death behavior runs before pool return.
@@ -79,7 +79,7 @@ Each configured pool owns an inactive stack and an active set. Rent pops an inac
 2. Activation-dependent completion.
 3. Return cleanup.
 
-`SpawnManager` assigns a new `SpawnId` for every unit spawn and returns partial spawns immediately if initialization fails.
+`SpawnManager` assigns a new `SpawnId` for every unit spawn and returns partial spawns immediately if initialization fails. Projectiles use their concrete `ProjectileController`; there is no generic spawn-context receiver layer.
 
 ## Assets and scenes
 
@@ -139,3 +139,4 @@ Avoid tests that merely repeat prefab hierarchy or scene-YAML structure. Validat
 - Do not keep implementation generators after their assets exist.
 - Do not add a test because a file or implementation step exists; add it because a meaningful behavior can regress.
 - Keep diagnostics outside gameplay update paths unless the diagnostic is actively used during normal development.
+- Let the lifecycle controller return dead units automatically; special death behavior runs synchronously from its death event first.

@@ -23,7 +23,6 @@ namespace MonstersVsZombies.Core.Bootstrap
         [field: SerializeField] public SpawnManager SpawnManager { get; private set; }
         [field: SerializeField] public InteractionSystem InteractionSystem { get; private set; }
         [field: SerializeField] public UnitRegistry UnitRegistry { get; private set; }
-        [field: SerializeField] public InitialSandboxSpawner InitialSandboxSpawner { get; private set; }
         [field: SerializeField] public SpawnPointGroup PlayerSpawnPoints { get; private set; }
         [field: SerializeField] public SpawnPointGroup AllySpawnPoints { get; private set; }
         [field: SerializeField] public SpawnPointGroup EnemySpawnPoints { get; private set; }
@@ -84,12 +83,9 @@ namespace MonstersVsZombies.Core.Bootstrap
             if (!SpawnManager.Initialize(
                     PoolManager,
                     UnitRegistry,
-                    out failureMessage) ||
-                !InitialSandboxSpawner.Configure(SpawnManager))
+                    out failureMessage))
             {
-                LastFailureMessage = string.IsNullOrWhiteSpace(failureMessage)
-                    ? "InitialSandboxSpawner configuration failed."
-                    : failureMessage;
+                LastFailureMessage = failureMessage;
                 return false;
             }
 
@@ -109,9 +105,12 @@ namespace MonstersVsZombies.Core.Bootstrap
             }
 
             SpawnResult<UnitController> spawnResult =
-                InitialSandboxSpawner.Spawn(
+                SpawnManager.SpawnUnit(new UnitSpawnRequest(
                     PlayerDefinition,
-                    spawnPose);
+                    spawnPose.position,
+                    spawnPose.rotation,
+                    default,
+                    SpawnReason.Initial));
             if (!spawnResult.IsSuccess)
             {
                 LastFailureMessage =
@@ -176,9 +175,12 @@ namespace MonstersVsZombies.Core.Bootstrap
             }
 
             SpawnResult<UnitController> spawnResult =
-                InitialSandboxSpawner.Spawn(
+                SpawnManager.SpawnUnit(new UnitSpawnRequest(
                     StationaryEnemyDefinition,
-                    spawnPose);
+                    spawnPose.position,
+                    spawnPose.rotation,
+                    default,
+                    SpawnReason.Initial));
             if (!spawnResult.IsSuccess)
             {
                 LastFailureMessage =
@@ -191,38 +193,6 @@ namespace MonstersVsZombies.Core.Bootstrap
             return true;
         }
 
-        internal void Configure(
-            PoolCatalog poolCatalog,
-            UnitCatalog unitCatalog,
-            PlayerUnitDefinition playerDefinition,
-            AIUnitDefinition stationaryEnemyDefinition,
-            PoolManager poolManager,
-            SpawnManager spawnManager,
-            InteractionSystem interactionSystem,
-            UnitRegistry unitRegistry,
-            InitialSandboxSpawner initialSandboxSpawner,
-            SpawnPointGroup playerSpawnPoints,
-            SpawnPointGroup allySpawnPoints,
-            SpawnPointGroup enemySpawnPoints,
-            CameraFollowController cameraFollowController,
-            PlayerHudController playerHudController)
-        {
-            PoolCatalog = poolCatalog;
-            UnitCatalog = unitCatalog;
-            PlayerDefinition = playerDefinition;
-            StationaryEnemyDefinition = stationaryEnemyDefinition;
-            PoolManager = poolManager;
-            SpawnManager = spawnManager;
-            InteractionSystem = interactionSystem;
-            UnitRegistry = unitRegistry;
-            InitialSandboxSpawner = initialSandboxSpawner;
-            PlayerSpawnPoints = playerSpawnPoints;
-            AllySpawnPoints = allySpawnPoints;
-            EnemySpawnPoints = enemySpawnPoints;
-            CameraFollowController = cameraFollowController;
-            PlayerHudController = playerHudController;
-        }
-
         private bool ValidateReferences(out string failureMessage)
         {
             if (PoolCatalog == null || !PoolCatalog.Validate().IsValid ||
@@ -233,7 +203,7 @@ namespace MonstersVsZombies.Core.Bootstrap
                 !StationaryEnemyDefinition.Validate().IsValid ||
                 PoolManager == null || SpawnManager == null ||
                 InteractionSystem == null || UnitRegistry == null ||
-                InitialSandboxSpawner == null || PlayerSpawnPoints == null ||
+                PlayerSpawnPoints == null ||
                 AllySpawnPoints == null || EnemySpawnPoints == null ||
                 CameraFollowController == null ||
                 PlayerHudController == null ||

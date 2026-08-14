@@ -21,26 +21,8 @@ namespace MonstersVsZombies.Units.AI
         Attack
     }
 
-    public readonly struct AIUnitStateChangedEvent
-    {
-        public UnitController Unit { get; }
-        public AIUnitState PreviousState { get; }
-        public AIUnitState CurrentState { get; }
-
-        public AIUnitStateChangedEvent(
-            UnitController unit,
-            AIUnitState previousState,
-            AIUnitState currentState)
-        {
-            Unit = unit;
-            PreviousState = previousState;
-            CurrentState = currentState;
-        }
-    }
-
     /// <summary>
-    /// Converts target range, stun, lifecycle, and cooldown state into the small
-    /// Idle/Chase/Attack decision loop for an AI-controlled unit.
+    /// Chooses between idling, chasing, and attacking for an AI unit.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnitController))]
@@ -52,25 +34,19 @@ namespace MonstersVsZombies.Units.AI
         private TargetingController _targetingController;
         private AttackController _attackController;
         private StatusEffectController _statusEffectController;
-        private UnitLifecycleController _lifecycleController;
         private IUnitMotor _unitMotor;
-        private MeleeAttackExecutor _meleeAttackExecutor;
-        private ProjectileAttackExecutor _projectileAttackExecutor;
+        private NavMeshUnitMotor _navMeshMotor;
         private bool _isPreparedForSpawn;
         private bool _isActivationComplete;
         private float _destinationRefreshRemaining;
-        private Vector3 _lastRequestedTargetPosition;
-        private bool _hasRequestedDestination;
-
-        public event Action<AIUnitStateChangedEvent> StateChanged;
+        private Vector3 _lastDestination;
 
         public AIUnitState State { get; private set; } = AIUnitState.Disabled;
         public bool HasRuntimeServices { get; private set; }
 
         private void Awake()
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
+            CacheComponents();
         }
 
         private void Update()
@@ -78,40 +54,23 @@ namespace MonstersVsZombies.Units.AI
             AdvanceDecision(Time.deltaTime);
         }
 
-        private void OnDestroy()
-        {
-            ReleasePermanentSubscriptions();
-        }
-
         public bool ValidateConfiguration(out string failureMessage)
         {
-            CacheSiblingComponents();
-            if (_unitController == null || _targetingController == null ||
-                _attackController == null || _statusEffectController == null ||
-                _lifecycleController == null ||
-                _unitMotor == null ||
-                !(_unitController.Definition is AIUnitDefinition definition) ||
-                !definition.Validate().IsValid)
-            {
-                failureMessage =
-                    "AIUnitBrain requires AI definition, targeting, attack, status, and motor capabilities.";
-                return false;
-            }
-
-            AIFactionDefinitionGuard factionGuard =
-                GetComponent<AIFactionDefinitionGuard>();
-            if (factionGuard != null &&
-                !factionGuard.ValidateConfiguration(out failureMessage))
-            {
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
+            CacheComponents();
+            bool isValid = _unitController != null &&
+                           _targetingController != null &&
+                           _attackController != null &&
+                           _statusEffectController != null &&
+                           _unitMotor != null &&
+                           _unitController.Definition is AIUnitDefinition definition &&
+                           definition.Validate().IsValid;
+            failureMessage = isValid
+                ? string.Empty
+                : "AIUnitBrain requires a valid AI definition and its core unit components.";
+            return isValid;
         }
 
-        public bool ConfigureRuntimeServices(
-            InteractionSystem interactionSystem)
+        public bool ConfigureRuntimeServices(InteractionSystem interactionSystem)
         {
             return ConfigureRuntimeServices(null, interactionSystem);
         }
@@ -120,44 +79,44 @@ namespace MonstersVsZombies.Units.AI
             SpawnManager spawnManager,
             InteractionSystem interactionSystem)
         {
-            CacheSiblingComponents();
+            CacheComponents();
             if (interactionSystem == null ||
-                !(_unitController?.Definition is AIUnitDefinition definition) ||
-                definition.DefaultAttackDefinition == null)
+                !(_unitController?.Definition is AIUnitDefinition definition))
             {
                 HasRuntimeServices = false;
                 return false;
             }
 
-            switch (definition.DefaultAttackDefinition.DeliveryType)
+            AttackDeliveryType delivery =
+                definition.DefaultAttackDefinition.DeliveryType;
+            if (delivery == AttackDeliveryType.Melee)
             {
-                case AttackDeliveryType.Melee:
-                    HasRuntimeServices = _meleeAttackExecutor != null &&
-                        _meleeAttackExecutor.Configure(interactionSystem);
-                    break;
-
-                case AttackDeliveryType.Projectile:
-                    HasRuntimeServices = spawnManager != null &&
-                        _projectileAttackExecutor != null &&
-                        _projectileAttackExecutor.Configure(
-                            spawnManager,
-                            interactionSystem,
-                            _projectileAttackExecutor.AttackOrigin);
-                    break;
-
-                default:
-                    HasRuntimeServices = false;
-                    break;
+                MeleeAttackExecutor executor =
+                    GetComponent<MeleeAttackExecutor>();
+                HasRuntimeServices = executor != null &&
+                                     executor.Configure(interactionSystem);
+            }
+            else if (delivery == AttackDeliveryType.Projectile)
+            {
+                ProjectileAttackExecutor executor =
+                    GetComponent<ProjectileAttackExecutor>();
+                HasRuntimeServices = spawnManager != null && executor != null &&
+                    executor.Configure(
+                        spawnManager,
+                        interactionSystem,
+                        executor.AttackOrigin);
+            }
+            else
+            {
+                HasRuntimeServices = false;
             }
 
-            SpawnUnitsOnDeath spawnUnitsOnDeath =
-                GetComponent<SpawnUnitsOnDeath>();
-            if (HasRuntimeServices && spawnUnitsOnDeath != null)
+            SpawnUnitsOnDeath deathSpawn = GetComponent<SpawnUnitsOnDeath>();
+            if (HasRuntimeServices && deathSpawn != null)
             {
-                HasRuntimeServices = spawnUnitsOnDeath
-                    .ConfigureRuntimeServices(
-                        spawnManager,
-                        interactionSystem);
+                HasRuntimeServices = deathSpawn.ConfigureRuntimeServices(
+                    spawnManager,
+                    interactionSystem);
             }
 
             return HasRuntimeServices;
@@ -165,15 +124,8 @@ namespace MonstersVsZombies.Units.AI
 
         public bool PrepareForSpawn()
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
-            _unitMotor?.Stop();
-            _destinationRefreshRemaining = 0f;
-            _lastRequestedTargetPosition = transform.position;
-            _hasRequestedDestination = false;
-            HasRuntimeServices = false;
-            _isActivationComplete = false;
-            SetState(AIUnitState.Disabled);
+            CacheComponents();
+            ResetState();
             _isPreparedForSpawn = ValidateConfiguration(out _);
             return _isPreparedForSpawn;
         }
@@ -187,14 +139,9 @@ namespace MonstersVsZombies.Units.AI
 
         public void PrepareForReturn()
         {
-            _targetingController?.ClearCurrentTarget();
-            _unitMotor?.Stop();
-            _destinationRefreshRemaining = 0f;
-            _hasRequestedDestination = false;
-            HasRuntimeServices = false;
+            ResetState();
             _isPreparedForSpawn = false;
             _isActivationComplete = false;
-            SetState(AIUnitState.Disabled);
         }
 
         internal void AdvanceDecision(float deltaTime)
@@ -217,18 +164,9 @@ namespace MonstersVsZombies.Units.AI
             if (!_isPreparedForSpawn || !_isActivationComplete ||
                 _unitController == null || !_unitController.IsActive ||
                 _statusEffectController == null ||
-                _statusEffectController.IsChaseBlocked ||
-                _unitController.HealthController == null ||
-                !_unitController.HealthController.IsAlive)
+                _statusEffectController.IsChaseBlocked)
             {
-                EnterDisabled(true);
-                return;
-            }
-
-            if (State == AIUnitState.Disabled)
-            {
-                SetState(AIUnitState.Idle);
-                _unitMotor.Stop();
+                EnterDisabled();
                 return;
             }
 
@@ -236,82 +174,44 @@ namespace MonstersVsZombies.Units.AI
             if (!IsTargetValid(target))
             {
                 _targetingController.ClearCurrentTarget();
-                EnterIdle();
+                _unitMotor.Stop();
+                State = AIUnitState.Idle;
                 return;
             }
 
             AIUnitDefinition definition =
                 (AIUnitDefinition)_unitController.Definition;
-            float attackRange =
-                definition.DefaultAttackDefinition.AttackRange;
             if (CombatRangeRules.IsWithinRange(
                     transform.position,
                     target.transform.position,
-                    attackRange))
+                    definition.DefaultAttackDefinition.AttackRange))
             {
-                EnterAttack(target);
+                _unitMotor.Stop();
+                _unitMotor.FaceTowards(target.transform.position);
+                State = AIUnitState.Attack;
+                if (HasRuntimeServices)
+                {
+                    _attackController.TryStartAttack();
+                }
+
                 return;
             }
 
-            EnterChase(target);
-        }
-
-        private void EnterIdle()
-        {
-            _unitMotor.Stop();
-            _hasRequestedDestination = false;
-            SetState(AIUnitState.Idle);
-        }
-
-        private void EnterChase(UnitController target)
-        {
-            SetState(AIUnitState.Chase);
+            State = AIUnitState.Chase;
             _unitMotor.Resume();
             Vector3 targetPosition = target.transform.position;
-            float refreshDistance = Mathf.Max(
-                Mathf.Epsilon,
-                _unitMotor is IDestinationRefreshPolicy refreshPolicy
-                    ? refreshPolicy.DestinationRefreshDistance
-                    : 0f);
-            bool targetMovedMeaningfully = !_hasRequestedDestination ||
-                CombatRangeRules.GetSquaredPlanarDistance(
-                    _lastRequestedTargetPosition,
-                    targetPosition) >= refreshDistance * refreshDistance;
-            if (_destinationRefreshRemaining > 0f &&
-                !targetMovedMeaningfully)
+            float refreshDistance = _navMeshMotor == null
+                ? 0f
+                : _navMeshMotor.DestinationRefreshDistance;
+            bool targetMoved = CombatRangeRules.GetSquaredPlanarDistance(
+                _lastDestination,
+                targetPosition) >= refreshDistance * refreshDistance;
+            if (_destinationRefreshRemaining <= 0f || targetMoved)
             {
-                return;
+                _unitMotor.MoveTo(targetPosition);
+                _lastDestination = targetPosition;
+                _destinationRefreshRemaining = _targetingController.ScanInterval;
             }
-
-            _unitMotor.MoveTo(targetPosition);
-            _lastRequestedTargetPosition = targetPosition;
-            _hasRequestedDestination = true;
-            _destinationRefreshRemaining =
-                _targetingController.ScanInterval;
-        }
-
-        private void EnterAttack(UnitController target)
-        {
-            _unitMotor.Stop();
-            _unitMotor.FaceTowards(target.transform.position);
-            _hasRequestedDestination = false;
-            SetState(AIUnitState.Attack);
-            if (HasRuntimeServices)
-            {
-                _attackController.TryStartAttack();
-            }
-        }
-
-        private void EnterDisabled(bool clearTarget)
-        {
-            if (clearTarget)
-            {
-                _targetingController?.ClearCurrentTarget();
-            }
-
-            _unitMotor?.Stop();
-            _hasRequestedDestination = false;
-            SetState(AIUnitState.Disabled);
         }
 
         private bool IsTargetValid(UnitController target)
@@ -329,102 +229,32 @@ namespace MonstersVsZombies.Units.AI
                        definition.ChaseRange);
         }
 
-        private void SetState(AIUnitState state)
+        private void EnterDisabled()
         {
-            if (State == state)
-            {
-                return;
-            }
-
-            AIUnitState previousState = State;
-            State = state;
-            StateChanged?.Invoke(new AIUnitStateChangedEvent(
-                _unitController,
-                previousState,
-                State));
+            _targetingController?.ClearCurrentTarget();
+            _unitMotor?.Stop();
+            State = AIUnitState.Disabled;
         }
 
-        private void HandleStatusEffectChanged(
-            StatusEffectChangedEvent statusEffectEvent)
+        private void ResetState()
         {
-            if (statusEffectEvent.Unit == _unitController &&
-                statusEffectEvent.EffectType == StatusEffectType.Stun &&
-                statusEffectEvent.IsActive)
-            {
-                EnterDisabled(true);
-            }
+            _targetingController?.ClearCurrentTarget();
+            _unitMotor?.Stop();
+            _destinationRefreshRemaining = 0f;
+            _lastDestination = transform.position;
+            HasRuntimeServices = false;
+            State = AIUnitState.Disabled;
         }
 
-        private void HandleTargetLost(TargetingEvent targetingEvent)
-        {
-            if (targetingEvent.Source == _unitController &&
-                _unitController.IsActive &&
-                !_statusEffectController.IsChaseBlocked)
-            {
-                EnterIdle();
-            }
-        }
-
-        private void HandleUnitDying(
-            UnitLifecycleChangedEvent lifecycleEvent)
-        {
-            if (lifecycleEvent.Unit == _unitController)
-            {
-                EnterDisabled(true);
-            }
-        }
-
-        private void CacheSiblingComponents()
+        private void CacheComponents()
         {
             _unitController = GetComponent<UnitController>();
             _targetingController = GetComponent<TargetingController>();
             _attackController = GetComponent<AttackController>();
             _statusEffectController = GetComponent<StatusEffectController>();
-            _lifecycleController = GetComponent<UnitLifecycleController>();
-            _meleeAttackExecutor = GetComponent<MeleeAttackExecutor>();
-            _projectileAttackExecutor =
-                GetComponent<ProjectileAttackExecutor>();
+            _navMeshMotor = GetComponent<NavMeshUnitMotor>();
             _unitController?.CacheSiblingComponents();
             _unitMotor = _unitController?.UnitMotor;
-        }
-
-        private void EnsurePermanentSubscriptions()
-        {
-            ReleasePermanentSubscriptions();
-            if (_statusEffectController != null)
-            {
-                _statusEffectController.StatusEffectChanged +=
-                    HandleStatusEffectChanged;
-            }
-
-            if (_targetingController != null)
-            {
-                _targetingController.TargetLost += HandleTargetLost;
-            }
-
-            if (_lifecycleController != null)
-            {
-                _lifecycleController.Dying += HandleUnitDying;
-            }
-        }
-
-        private void ReleasePermanentSubscriptions()
-        {
-            if (_statusEffectController != null)
-            {
-                _statusEffectController.StatusEffectChanged -=
-                    HandleStatusEffectChanged;
-            }
-
-            if (_targetingController != null)
-            {
-                _targetingController.TargetLost -= HandleTargetLost;
-            }
-
-            if (_lifecycleController != null)
-            {
-                _lifecycleController.Dying -= HandleUnitDying;
-            }
         }
     }
 }

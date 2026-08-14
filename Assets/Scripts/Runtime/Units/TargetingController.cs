@@ -1,10 +1,8 @@
 using System;
 using MonstersVsZombies.Combat;
 using MonstersVsZombies.Combat.Interaction;
-using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
-using MonstersVsZombies.Diagnostics;
 using UnityEngine;
 
 namespace MonstersVsZombies.Units
@@ -16,49 +14,24 @@ namespace MonstersVsZombies.Units
         PlayerAttackRange
     }
 
-    public readonly struct TargetingEvent
-    {
-        public UnitController Source { get; }
-        public UnitController Target { get; }
-        public SpawnId TargetSpawnId { get; }
-
-        public TargetingEvent(
-            UnitController source,
-            UnitController target,
-            SpawnId targetSpawnId)
-        {
-            Source = source;
-            Target = target;
-            TargetSpawnId = targetSpawnId;
-        }
-    }
-
     /// <summary>
-    /// Performs fixed-capacity non-allocating hostile scans, chooses the nearest
-    /// valid target deterministically, and clears stale targets on lifecycle changes.
+    /// Periodically selects the nearest hostile unit in range.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TargetingController : MonoBehaviour, IPoolable
     {
+        private const string k_UnitTargetLayerName = "UnitTarget";
+
         private UnitController _unitController;
-        private UnitLifecycleController _lifecycleController;
-        private UnitLifecycleController _subscribedLifecycleController;
-        private TargetQueryBuffer _queryBuffer;
+        private Collider[] _colliders;
         private DamageTargetProxy _currentTargetProxy;
-        private SpawnId _currentTargetSpawnId;
-        private float _scanInterval;
-        private float _initialScanDelay;
         private float _scanTimeRemaining;
         private float _queryRange;
         private bool _isPreparedForSpawn;
-        private bool _hasReportedSaturatedQuery;
 
         [field: SerializeField] public int QueryCapacity { get; private set; }
         [field: SerializeField] public float ScanInterval { get; private set; }
         [field: SerializeField] public float InitialScanDelay { get; private set; }
-
-        public event Action<TargetingEvent> TargetAcquired;
-        public event Action<TargetingEvent> TargetLost;
 
         public UnitController CurrentTarget { get; private set; }
         public Vector3 CurrentTargetPoint =>
@@ -70,26 +43,11 @@ namespace MonstersVsZombies.Units
                     : CurrentTarget.transform.position;
         public TargetingMode Mode { get; private set; }
         public float QueryRange => _queryRange;
-        public bool IsInitialized => _queryBuffer != null;
-        public bool WasLastScanSaturated =>
-            _queryBuffer != null && _queryBuffer.WasSaturated;
-        public int LastUniqueCandidateCount =>
-            _queryBuffer == null ? 0 : _queryBuffer.UniqueTargetCount;
-        public int ScanCount { get; private set; }
-        public int SaturatedScanCount { get; private set; }
 
         private void Awake()
         {
-            CacheSiblingComponents();
-            EnsureQueryBuffer();
-            EnsurePermanentSubscriptions();
-        }
-
-        private void OnValidate()
-        {
-            CacheSiblingComponents();
-            EnsureQueryBuffer();
-            EnsurePermanentSubscriptions();
+            CacheComponents();
+            EnsureColliderBuffer();
         }
 
         private void Update()
@@ -97,26 +55,13 @@ namespace MonstersVsZombies.Units
             AdvanceTime(Time.deltaTime);
         }
 
-        private void OnDestroy()
-        {
-            ReleaseCurrentTargetSubscription();
-            ReleasePermanentSubscriptions();
-        }
-
         public bool InitializeScanning(
             int queryCapacity,
             float scanInterval,
             float initialScanDelay)
         {
-            if (queryCapacity <= 0 ||
-                (QueryCapacity > 0 && QueryCapacity != queryCapacity) ||
-                scanInterval <= 0f ||
-                float.IsNaN(scanInterval) ||
-                float.IsInfinity(scanInterval) ||
-                initialScanDelay < 0f ||
-                initialScanDelay > scanInterval ||
-                float.IsNaN(initialScanDelay) ||
-                float.IsInfinity(initialScanDelay))
+            if (queryCapacity <= 0 || !IsPositiveFinite(scanInterval) ||
+                initialScanDelay < 0f || initialScanDelay > scanInterval)
             {
                 return false;
             }
@@ -124,45 +69,29 @@ namespace MonstersVsZombies.Units
             QueryCapacity = queryCapacity;
             ScanInterval = scanInterval;
             InitialScanDelay = initialScanDelay;
-            _queryBuffer = new TargetQueryBuffer(QueryCapacity);
-            _scanInterval = scanInterval;
-            _initialScanDelay = initialScanDelay;
+            _colliders = new Collider[queryCapacity];
             _scanTimeRemaining = initialScanDelay;
             return true;
         }
 
         public bool ValidateConfiguration(out string failureMessage)
         {
-            CacheSiblingComponents();
-            EnsureQueryBuffer();
-            if (_unitController == null || _lifecycleController == null)
-            {
-                failureMessage =
-                    "TargetingController requires UnitController and " +
-                    "UnitLifecycleController siblings.";
-                return false;
-            }
-
-            if (!IsInitialized || !IsPositiveFinite(_scanInterval) ||
-                _initialScanDelay < 0f ||
-                _initialScanDelay > _scanInterval)
-            {
-                failureMessage =
-                    "TargetingController requires an initialized query buffer " +
-                    "and an explicit valid scan schedule.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
+            CacheComponents();
+            EnsureColliderBuffer();
+            bool isValid = _unitController != null && _colliders != null &&
+                           IsPositiveFinite(ScanInterval) &&
+                           InitialScanDelay >= 0f &&
+                           InitialScanDelay <= ScanInterval;
+            failureMessage = isValid
+                ? string.Empty
+                : "TargetingController requires a UnitController and a valid scan schedule.";
+            return isValid;
         }
 
         public bool SetPlayerAttackRange(float attackRange)
         {
-            CacheSiblingComponents();
-            EnsurePermanentSubscriptions();
-            if (_unitController == null ||
-                !(_unitController.Definition is PlayerUnitDefinition) ||
+            CacheComponents();
+            if (!(_unitController?.Definition is PlayerUnitDefinition) ||
                 !IsPositiveFinite(attackRange))
             {
                 return false;
@@ -170,35 +99,21 @@ namespace MonstersVsZombies.Units
 
             Mode = TargetingMode.PlayerAttackRange;
             _queryRange = attackRange;
-            if (CurrentTarget != null && !IsCurrentTargetValid())
-            {
-                ClearTarget();
-            }
-
+            ClearInvalidTarget();
             return true;
-        }
-
-        internal void ClearCurrentTarget()
-        {
-            ClearTarget();
         }
 
         public bool PrepareForSpawn()
         {
-            CacheSiblingComponents();
-            EnsureQueryBuffer();
-            EnsurePermanentSubscriptions();
-            ClearTarget();
-            _scanTimeRemaining = _initialScanDelay;
-            _isPreparedForSpawn = false;
-            _hasReportedSaturatedQuery = false;
-            ScanCount = 0;
-            SaturatedScanCount = 0;
+            CacheComponents();
+            EnsureColliderBuffer();
+            ClearCurrentTarget();
+            _scanTimeRemaining = InitialScanDelay;
             Mode = TargetingMode.Disabled;
             _queryRange = 0f;
+            _isPreparedForSpawn = false;
 
-            if (_unitController == null || !IsInitialized ||
-                _unitController.Definition == null)
+            if (_unitController?.Definition == null || _colliders == null)
             {
                 return false;
             }
@@ -225,15 +140,11 @@ namespace MonstersVsZombies.Units
 
         public void PrepareForReturn()
         {
-            ClearTarget();
-            _scanTimeRemaining = _initialScanDelay;
-            _queryBuffer?.Reset();
+            ClearCurrentTarget();
+            _scanTimeRemaining = InitialScanDelay;
             Mode = TargetingMode.Disabled;
             _queryRange = 0f;
             _isPreparedForSpawn = false;
-            _hasReportedSaturatedQuery = false;
-            ScanCount = 0;
-            SaturatedScanCount = 0;
         }
 
         internal void AdvanceTime(float deltaTime)
@@ -241,269 +152,135 @@ namespace MonstersVsZombies.Units
             if (deltaTime < 0f || float.IsNaN(deltaTime) ||
                 float.IsInfinity(deltaTime))
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(deltaTime),
-                    "Targeting time must be non-negative and finite.");
+                throw new ArgumentOutOfRangeException(nameof(deltaTime));
             }
 
             if (_unitController == null || !_unitController.IsActive ||
-                Mode == TargetingMode.Disabled || !IsInitialized)
+                Mode == TargetingMode.Disabled)
             {
                 return;
             }
 
-            if (CurrentTarget != null && !IsCurrentTargetValid())
-            {
-                ClearTarget();
-            }
-
+            ClearInvalidTarget();
             _scanTimeRemaining -= deltaTime;
-            if (_scanTimeRemaining > 0f)
+            if (_scanTimeRemaining <= 0f)
             {
-                return;
+                ForceScan();
+                _scanTimeRemaining = ScanInterval;
             }
-
-            ForceScan();
-            _scanTimeRemaining = _scanInterval;
         }
 
         internal bool ForceScan()
         {
             if (_unitController == null || !_unitController.IsActive ||
-                Mode == TargetingMode.Disabled || !IsInitialized ||
+                Mode == TargetingMode.Disabled || _colliders == null ||
                 !IsPositiveFinite(_queryRange))
             {
                 return false;
             }
 
-            _queryBuffer.Query(
+            int layer = LayerMask.NameToLayer(k_UnitTargetLayerName);
+            int count = Physics.OverlapSphereNonAlloc(
                 transform.position,
                 _queryRange,
-                _unitController.SpawnId,
-                _unitController.Faction);
-            ScanCount++;
-            if (_queryBuffer.WasSaturated)
-            {
-                SaturatedScanCount++;
-            }
+                _colliders,
+                1 << layer,
+                QueryTriggerInteraction.Collide);
 
-            if (_queryBuffer.WasSaturated && !_hasReportedSaturatedQuery &&
-                SandboxDebugRuntime.AreDiagnosticsEnabled)
+            UnitController nearest = null;
+            DamageTargetProxy nearestProxy = null;
+            float nearestDistance = float.MaxValue;
+            for (int index = 0; index < count; index++)
             {
-                _hasReportedSaturatedQuery = true;
-                SandboxDebugRuntime.Report(
-                    SandboxDiagnosticCode.TargetQueryBufferFull,
-                    $"{name} filled its target-query buffer of {QueryCapacity}; " +
-                    "increase the explicit query capacity if candidates are being omitted.",
-                    this);
-            }
-
-            UnitController selectedTarget = null;
-            DamageTargetProxy selectedTargetProxy = null;
-            SpawnId selectedSpawnId = default;
-            float selectedSquaredDistance = 0f;
-            for (int targetIndex = 0;
-                 targetIndex < _queryBuffer.UniqueTargetCount;
-                 targetIndex++)
-            {
-                DamageTargetProxy targetProxy = _queryBuffer.GetTarget(targetIndex);
-                UnitController candidate = targetProxy.UnitController;
-                if (candidate == null ||
-                    !CombatRangeRules.IsWithinRange(
-                        transform.position,
-                        candidate.transform.position,
-                        _queryRange))
+                Collider candidateCollider = _colliders[index];
+                _colliders[index] = null;
+                if (candidateCollider == null ||
+                    !candidateCollider.TryGetComponent(
+                        out DamageTargetProxy targetProxy))
                 {
                     continue;
                 }
 
-                float candidateSquaredDistance =
-                    CombatRangeRules.GetSquaredPlanarDistance(
-                        transform.position,
-                        candidate.transform.position);
-                if (selectedTarget == null ||
-                    NearestTargetRules.IsCandidatePreferred(
-                        candidateSquaredDistance,
-                        candidate.SpawnId,
-                        selectedSquaredDistance,
-                        selectedSpawnId))
+                UnitController candidate = targetProxy.UnitController;
+                if (!IsValidTarget(candidate))
                 {
-                    selectedTarget = candidate;
-                    selectedTargetProxy = targetProxy;
-                    selectedSpawnId = candidate.SpawnId;
-                    selectedSquaredDistance = candidateSquaredDistance;
+                    continue;
+                }
+
+                float distance = CombatRangeRules.GetSquaredPlanarDistance(
+                    transform.position,
+                    candidate.transform.position);
+                if (nearest == null || distance < nearestDistance ||
+                    (distance == nearestDistance &&
+                     candidate.SpawnId.CompareTo(nearest.SpawnId) < 0))
+                {
+                    nearest = candidate;
+                    nearestProxy = targetProxy;
+                    nearestDistance = distance;
                 }
             }
 
-            SetTarget(selectedTarget, selectedTargetProxy);
-            return selectedTarget != null;
+            CurrentTarget = nearest;
+            _currentTargetProxy = nearestProxy;
+            return CurrentTarget != null;
         }
 
         internal bool IsCurrentTargetWithinRange(float range)
         {
-            return IsPositiveFinite(range) &&
-                   IsCurrentTargetIdentityValid() &&
+            return IsPositiveFinite(range) && IsValidTarget(CurrentTarget) &&
                    CombatRangeRules.IsWithinRange(
                        transform.position,
                        CurrentTarget.transform.position,
                        range);
         }
 
-        private bool IsCurrentTargetValid()
+        internal void ClearCurrentTarget()
         {
-            return IsCurrentTargetIdentityValid() &&
+            CurrentTarget = null;
+            _currentTargetProxy = null;
+        }
+
+        private bool IsValidTarget(UnitController candidate)
+        {
+            return candidate != null && candidate != _unitController &&
+                   candidate.IsActive && candidate.SpawnId.IsValid &&
+                   candidate.HealthController != null &&
+                   candidate.HealthController.IsAlive &&
                    FactionRules.AreHostile(
                        _unitController.Faction,
-                       CurrentTarget.Faction) &&
-                   CurrentTarget.HealthController != null &&
-                   CurrentTarget.HealthController.IsAlive &&
-                   CurrentTarget.IsActive &&
+                       candidate.Faction) &&
                    CombatRangeRules.IsWithinRange(
                        transform.position,
-                       CurrentTarget.transform.position,
+                       candidate.transform.position,
                        _queryRange);
         }
 
-        private bool IsCurrentTargetIdentityValid()
+        private void ClearInvalidTarget()
         {
-            return CurrentTarget != null &&
-                   _currentTargetSpawnId.IsValid &&
-                   CurrentTarget.SpawnId == _currentTargetSpawnId;
-        }
-
-        private void SetTarget(
-            UnitController target,
-            DamageTargetProxy targetProxy)
-        {
-            if (target == CurrentTarget &&
-                (target == null || target.SpawnId == _currentTargetSpawnId))
+            if (CurrentTarget != null && !IsValidTarget(CurrentTarget))
             {
-                _currentTargetProxy = targetProxy;
-                return;
-            }
-
-            ClearTarget();
-            if (target == null)
-            {
-                return;
-            }
-
-            CurrentTarget = target;
-            _currentTargetProxy = targetProxy;
-            _currentTargetSpawnId = target.SpawnId;
-            if (target.LifecycleController != null)
-            {
-                target.LifecycleController.Despawned += HandleTargetDespawned;
-            }
-
-            TargetAcquired?.Invoke(new TargetingEvent(
-                _unitController,
-                CurrentTarget,
-                _currentTargetSpawnId));
-        }
-
-        private void ClearTarget()
-        {
-            if (CurrentTarget == null)
-            {
-                _currentTargetProxy = null;
-                _currentTargetSpawnId = default;
-                return;
-            }
-
-            UnitController lostTarget = CurrentTarget;
-            SpawnId lostSpawnId = _currentTargetSpawnId;
-            ReleaseCurrentTargetSubscription();
-            CurrentTarget = null;
-            _currentTargetProxy = null;
-            _currentTargetSpawnId = default;
-            TargetLost?.Invoke(new TargetingEvent(
-                _unitController,
-                lostTarget,
-                lostSpawnId));
-        }
-
-        private void HandleTargetDespawned(UnitLifecycleChangedEvent lifecycleEvent)
-        {
-            if (lifecycleEvent.Unit == CurrentTarget &&
-                lifecycleEvent.SpawnId == _currentTargetSpawnId)
-            {
-                ClearTarget();
+                ClearCurrentTarget();
             }
         }
 
-        private void HandleSourceDying(UnitLifecycleChangedEvent lifecycleEvent)
-        {
-            if (lifecycleEvent.Unit == _unitController)
-            {
-                ClearTarget();
-            }
-        }
-
-        private void ReleaseCurrentTargetSubscription()
-        {
-            if (CurrentTarget != null &&
-                CurrentTarget.LifecycleController != null)
-            {
-                CurrentTarget.LifecycleController.Despawned -=
-                    HandleTargetDespawned;
-            }
-        }
-
-        private void CacheSiblingComponents()
+        private void CacheComponents()
         {
             _unitController = GetComponent<UnitController>();
-            _lifecycleController = GetComponent<UnitLifecycleController>();
         }
 
-        private void EnsurePermanentSubscriptions()
+        private void EnsureColliderBuffer()
         {
-            if (_subscribedLifecycleController == _lifecycleController)
+            if (QueryCapacity > 0 &&
+                (_colliders == null || _colliders.Length != QueryCapacity))
             {
-                return;
-            }
-
-            ReleasePermanentSubscriptions();
-            _subscribedLifecycleController = _lifecycleController;
-            if (_subscribedLifecycleController != null)
-            {
-                _subscribedLifecycleController.Dying += HandleSourceDying;
-            }
-        }
-
-        private void ReleasePermanentSubscriptions()
-        {
-            if (_subscribedLifecycleController != null)
-            {
-                _subscribedLifecycleController.Dying -= HandleSourceDying;
-                _subscribedLifecycleController = null;
+                _colliders = new Collider[QueryCapacity];
             }
         }
 
         private static bool IsPositiveFinite(float value)
         {
-            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
-        }
-
-        private void EnsureQueryBuffer()
-        {
-            if (QueryCapacity <= 0 || !IsPositiveFinite(ScanInterval) ||
-                InitialScanDelay < 0f || InitialScanDelay > ScanInterval)
-            {
-                return;
-            }
-
-            if (_queryBuffer == null || _queryBuffer.Capacity != QueryCapacity)
-            {
-                _queryBuffer = new TargetQueryBuffer(QueryCapacity);
-            }
-
-            _scanInterval = ScanInterval;
-            _initialScanDelay = InitialScanDelay;
-            if (!_isPreparedForSpawn)
-            {
-                _scanTimeRemaining = _initialScanDelay;
-            }
+            return value > 0f && !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
         }
     }
 }

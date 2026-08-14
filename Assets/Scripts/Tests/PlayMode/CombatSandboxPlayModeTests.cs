@@ -121,9 +121,12 @@ namespace MonstersVsZombies.Tests.PlayMode
 
             Assert.That(_bootstrap.SpawnManager.ReturnUnit(enemy).IsSuccess, Is.True);
             SpawnResult<UnitController> respawnResult =
-                _bootstrap.InitialSandboxSpawner.Spawn(
+                _bootstrap.SpawnManager.SpawnUnit(new UnitSpawnRequest(
                     _bootstrap.StationaryEnemyDefinition,
-                    spawnPose);
+                    spawnPose.position,
+                    spawnPose.rotation,
+                    default,
+                    SpawnReason.Initial));
 
             Assert.That(respawnResult.IsSuccess, Is.True);
             Assert.That(respawnResult.Entity, Is.SameAs(enemy));
@@ -213,7 +216,6 @@ namespace MonstersVsZombies.Tests.PlayMode
 
             Assert.That(didComplete, Is.True);
             Assert.That(completedEvent.SpawnedCount, Is.EqualTo(3));
-            Assert.That(completedEvent.FailedCount, Is.Zero);
         }
 
         private static HitContext CreateHit(

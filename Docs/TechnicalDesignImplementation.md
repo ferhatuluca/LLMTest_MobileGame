@@ -66,6 +66,8 @@ Use the PlayMode pool-reuse test as the baseline regression check.
 
 Never name a test after an implementation step. Test names should state an action and expected outcome.
 
+Do not add lifecycle relays, executor binding tables, policy interfaces, or spawn-context receivers for a single concrete behavior. Add a shared boundary only after a second real implementation needs it.
+
 ## Verification commands
 
 Run Unity Test Framework EditMode and PlayMode suites. In automated environments use an isolated project copy when the project is already open in the Editor.
