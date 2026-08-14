@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using MonstersVsZombies.Data;
-using MonstersVsZombies.Diagnostics;
 using UnityEngine;
 
 namespace MonstersVsZombies.Core.Pooling
@@ -105,19 +104,7 @@ namespace MonstersVsZombies.Core.Pooling
 
         public PoolRentResult<PooledEntity> Rent(PoolId poolId)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.PoolRentMarker.Auto())
-            {
-                PoolRentResult<PooledEntity> result = RentInternal(poolId);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                SandboxPerformanceDiagnostics.RecordAllocation(
-                    SandboxPerformanceSubsystem.PoolRent,
-                    GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
-                return result;
-            }
+            return RentInternal(poolId);
         }
 
         private PoolRentResult<PooledEntity> RentInternal(PoolId poolId)
@@ -135,19 +122,7 @@ namespace MonstersVsZombies.Core.Pooling
 
         public PoolReturnResult Return(PooledEntity entity)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.PoolReturnMarker.Auto())
-            {
-                PoolReturnResult result = ReturnInternal(entity);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                SandboxPerformanceDiagnostics.RecordAllocation(
-                    SandboxPerformanceSubsystem.PoolReturn,
-                    GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
-                return result;
-            }
+            return ReturnInternal(entity);
         }
 
         private PoolReturnResult ReturnInternal(PooledEntity entity)

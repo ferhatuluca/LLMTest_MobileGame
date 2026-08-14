@@ -6,7 +6,6 @@ using MonstersVsZombies.Combat.StatusEffects;
 using MonstersVsZombies.Core;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
-using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Units;
 using UnityEngine;
 
@@ -17,40 +16,6 @@ namespace MonstersVsZombies.Combat.Attacks
         Idle,
         Windup,
         Recovery
-    }
-
-    public readonly struct AttackTimingEvent
-    {
-        public UnitController Source { get; }
-        public UnitController Target { get; }
-        public AttackKey AttackKey { get; }
-        public AttackTimingState State { get; }
-
-        public AttackTimingEvent(
-            UnitController source,
-            UnitController target,
-            AttackKey attackKey,
-            AttackTimingState state)
-        {
-            Source = source;
-            Target = target;
-            AttackKey = attackKey;
-            State = state;
-        }
-    }
-
-    public readonly struct AttackImpactEvent
-    {
-        public AttackExecutionContext ExecutionContext { get; }
-        public InteractionResult InteractionResult { get; }
-
-        public AttackImpactEvent(
-            AttackExecutionContext executionContext,
-            InteractionResult interactionResult)
-        {
-            ExecutionContext = executionContext;
-            InteractionResult = interactionResult;
-        }
     }
 
     /// <summary>
@@ -82,11 +47,6 @@ namespace MonstersVsZombies.Combat.Attacks
         private bool _isActivationComplete;
         private bool _hasImpacted;
 
-        public event Action<AttackTimingEvent> AttackStarted;
-        public event Action<AttackTimingEvent> AttackCancelled;
-        public event Action<AttackTimingEvent> RecoveryCompleted;
-        public event Action<AttackImpactEvent> ImpactResolved;
-
         public AttackTimingState State { get; private set; }
         public AttackKey ActiveAttackKey { get; private set; }
         public float CooldownRemaining { get; private set; }
@@ -110,18 +70,7 @@ namespace MonstersVsZombies.Combat.Attacks
 
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.AttackMarker.Auto())
-            {
-                AdvanceTime(Time.deltaTime);
-            }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            SandboxPerformanceDiagnostics.RecordAllocation(
-                SandboxPerformanceSubsystem.Attack,
-                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
+            AdvanceTime(Time.deltaTime);
         }
 
         private void OnDestroy()
@@ -307,8 +256,6 @@ namespace MonstersVsZombies.Combat.Attacks
             _hasImpacted = false;
             State = AttackTimingState.Windup;
             _unitController.UnitMotor?.FaceTowards(_attackTarget.transform.position);
-            AttackStarted?.Invoke(CreateTimingEvent(State));
-
             if (WindupRemaining <= 0f)
             {
                 RequestImpact();
@@ -336,7 +283,7 @@ namespace MonstersVsZombies.Combat.Attacks
                     _attackTarget.transform.position,
                     AttackDefinition.AttackRange))
             {
-                BeginRecovery(default);
+                BeginRecovery();
                 return false;
             }
 
@@ -379,9 +326,7 @@ namespace MonstersVsZombies.Combat.Attacks
                 }
             }
 
-            BeginRecovery(new AttackImpactEvent(
-                executionContext,
-                interactionResult));
+            BeginRecovery();
             return true;
         }
 
@@ -548,16 +493,12 @@ namespace MonstersVsZombies.Combat.Attacks
                         AttackDefinition.AttackRange));
         }
 
-        private void BeginRecovery(AttackImpactEvent impactEvent)
+        private void BeginRecovery()
         {
             _hasImpacted = true;
             WindupRemaining = 0f;
             RecoveryRemaining = AttackDefinition.RecoveryDuration;
             State = AttackTimingState.Recovery;
-            if (impactEvent.ExecutionContext.AttackKey.IsValid)
-            {
-                ImpactResolved?.Invoke(impactEvent);
-            }
 
             if (RecoveryRemaining <= 0f)
             {
@@ -567,12 +508,9 @@ namespace MonstersVsZombies.Combat.Attacks
 
         private void CompleteRecovery()
         {
-            AttackTimingEvent timingEvent = CreateTimingEvent(
-                AttackTimingState.Idle);
             State = AttackTimingState.Idle;
             RecoveryRemaining = 0f;
             ClearActiveSequence();
-            RecoveryCompleted?.Invoke(timingEvent);
         }
 
         private void CancelActiveAttack(bool resetCommittedTiming)
@@ -582,8 +520,6 @@ namespace MonstersVsZombies.Combat.Attacks
                 return;
             }
 
-            AttackTimingEvent timingEvent = CreateTimingEvent(
-                AttackTimingState.Idle);
             State = AttackTimingState.Idle;
             WindupRemaining = 0f;
             RecoveryRemaining = 0f;
@@ -593,7 +529,6 @@ namespace MonstersVsZombies.Combat.Attacks
             }
 
             ClearActiveSequence();
-            AttackCancelled?.Invoke(timingEvent);
         }
 
         private void ResetAllTiming()
@@ -613,15 +548,6 @@ namespace MonstersVsZombies.Combat.Attacks
             _attackTarget = null;
             _attackTargetSpawnId = default;
             _hasImpacted = false;
-        }
-
-        private AttackTimingEvent CreateTimingEvent(AttackTimingState state)
-        {
-            return new AttackTimingEvent(
-                _unitController,
-                _attackTarget,
-                ActiveAttackKey,
-                state);
         }
 
         private void HandleTargetLost(TargetingEvent targetingEvent)

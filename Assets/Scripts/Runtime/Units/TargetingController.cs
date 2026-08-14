@@ -94,18 +94,7 @@ namespace MonstersVsZombies.Units
 
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.TargetingMarker.Auto())
-            {
-                AdvanceTime(Time.deltaTime);
-            }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            SandboxPerformanceDiagnostics.RecordAllocation(
-                SandboxPerformanceSubsystem.Targeting,
-                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
+            AdvanceTime(Time.deltaTime);
         }
 
         private void OnDestroy()

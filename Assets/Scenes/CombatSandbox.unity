@@ -873,58 +873,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
   m_Asset: {fileID: 958997661}
   m_ActionId: dad70c86-b58c-4b17-88ad-f5e53adf419e
---- !u!1 &213519846
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 213519847}
-  - component: {fileID: 213519848}
-  m_Layer: 0
-  m_Name: AISandboxScenario
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &213519847
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 213519846}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1806570974}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &213519848
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 213519846}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e07086feea835047a3d28ae42bd0226, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Core.Bootstrap.AISandboxScenarioController
-  <Bootstrap>k__BackingField: {fileID: 366632651}
-  <InitialSandboxSpawner>k__BackingField: {fileID: 1581417186}
-  <SpawnManager>k__BackingField: {fileID: 1118147333}
-  <InteractionSystem>k__BackingField: {fileID: 89045363}
-  <AllySpawnPoints>k__BackingField: {fileID: 1633867798}
-  <EnemySpawnPoints>k__BackingField: {fileID: 1827412807}
-  <AllyDefinition>k__BackingField: {fileID: 11400000, guid: 81e0bb396ea021941a5e9a51f2be52b1, type: 2}
-  <EnemyDefinition>k__BackingField: {fileID: 11400000, guid: 279aee15555e9094bb4d285e4846e563, type: 2}
 --- !u!1 &226679911
 GameObject:
   m_ObjectHideFlags: 0
@@ -1189,59 +1137,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 271526890}
   m_CullTransparentMesh: 1
---- !u!1 &276586647
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 276586648}
-  - component: {fileID: 276586649}
-  m_Layer: 0
-  m_Name: SpecialUnitSandboxScenario
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &276586648
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 276586647}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1806570974}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &276586649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 276586647}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d84a625758849304a8fc15f84af8b513, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Core.Bootstrap.SpecialUnitSandboxScenarioController
-  _definitions:
-  - {fileID: 11400000, guid: 914fa96b74155764c9c0708bbc7572a1, type: 2}
-  - {fileID: 11400000, guid: 3cf32afabde91ca45a32df9c52c42ce6, type: 2}
-  - {fileID: 11400000, guid: 1b37f8769e9ddea44b77213a774f6b00, type: 2}
-  <Bootstrap>k__BackingField: {fileID: 366632651}
-  <InitialSandboxSpawner>k__BackingField: {fileID: 1581417186}
-  <SpawnManager>k__BackingField: {fileID: 1118147333}
-  <InteractionSystem>k__BackingField: {fileID: 89045363}
-  <SpawnPoints>k__BackingField: {fileID: 376311729}
 --- !u!1 &280722718
 GameObject:
   m_ObjectHideFlags: 0
@@ -9087,65 +8982,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1671482842}
   m_CullTransparentMesh: 1
---- !u!1 &1698420800
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1698420801}
-  - component: {fileID: 1698420802}
-  m_Layer: 0
-  m_Name: RegularUnitSandboxScenario
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1698420801
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1698420800}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1806570974}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1698420802
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1698420800}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 162dd651b1598a64aa639bd3fd648d56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MonstersVsZombies.Runtime::MonstersVsZombies.Core.Bootstrap.RegularUnitSandboxScenarioController
-  _allyDefinitions:
-  - {fileID: 11400000, guid: ee52b1d542950c24bb981ec573ec2650, type: 2}
-  - {fileID: 11400000, guid: 3701534b948a11c42b2eff74d7259f6c, type: 2}
-  - {fileID: 11400000, guid: 436cb612a286cbe46bc8dfe3ab399a73, type: 2}
-  - {fileID: 11400000, guid: b1b040913e78fc64fa2764d02d9f634f, type: 2}
-  _enemyDefinitions:
-  - {fileID: 11400000, guid: fba244a415424344e951cea4b5737b14, type: 2}
-  - {fileID: 11400000, guid: 6446f0462e5f49c408e89c128b564544, type: 2}
-  - {fileID: 11400000, guid: 4a7a748a7eefaf1408e877c72be85e3f, type: 2}
-  <Bootstrap>k__BackingField: {fileID: 366632651}
-  <InitialSandboxSpawner>k__BackingField: {fileID: 1581417186}
-  <SpawnManager>k__BackingField: {fileID: 1118147333}
-  <InteractionSystem>k__BackingField: {fileID: 89045363}
-  <AllySpawnPoints>k__BackingField: {fileID: 445899424}
-  <EnemySpawnPoints>k__BackingField: {fileID: 1738204425}
 --- !u!1 &1701820800
 GameObject:
   m_ObjectHideFlags: 0
@@ -9976,9 +9812,6 @@ Transform:
   - {fileID: 1581417187}
   - {fileID: 1021782836}
   - {fileID: 366632650}
-  - {fileID: 213519847}
-  - {fileID: 1698420801}
-  - {fileID: 276586648}
   - {fileID: 1179455355}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

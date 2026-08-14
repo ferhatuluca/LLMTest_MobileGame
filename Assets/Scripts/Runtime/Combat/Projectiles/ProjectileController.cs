@@ -4,7 +4,6 @@ using MonstersVsZombies.Combat.Damage;
 using MonstersVsZombies.Combat.Interaction;
 using MonstersVsZombies.Core.Pooling;
 using MonstersVsZombies.Data;
-using MonstersVsZombies.Diagnostics;
 using MonstersVsZombies.Spawning;
 using MonstersVsZombies.Units;
 using UnityEngine;
@@ -59,18 +58,7 @@ namespace MonstersVsZombies.Combat.Projectiles
 
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.ProjectileMarker.Auto())
-            {
-                AdvanceTime(Time.deltaTime);
-            }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            SandboxPerformanceDiagnostics.RecordAllocation(
-                SandboxPerformanceSubsystem.Projectile,
-                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
+            AdvanceTime(Time.deltaTime);
         }
 
         public bool ConfigureProjectileRuntime(

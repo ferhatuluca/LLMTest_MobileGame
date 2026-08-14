@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using MonstersVsZombies.Data;
 using UnityEngine;
-using UnityEngine.Pool;
 
 namespace MonstersVsZombies.Core.Pooling
 {
@@ -14,12 +13,10 @@ namespace MonstersVsZombies.Core.Pooling
     {
         private readonly HashSet<PooledEntity> _activeEntities =
             new HashSet<PooledEntity>();
-        private readonly List<PooledEntity> _prewarmScratch =
-            new List<PooledEntity>();
+        private readonly Stack<PooledEntity> _inactiveEntities =
+            new Stack<PooledEntity>();
         private readonly PoolManager _poolManager;
         private readonly PoolCatalogEntry _catalogEntry;
-        private readonly ObjectPool<PooledEntity> _objectPool;
-        private bool _isReleasingEntity;
         private int _createdCount;
         private int _peakActiveCount;
         private int _failedRentCount;
@@ -42,14 +39,6 @@ namespace MonstersVsZombies.Core.Pooling
                 catalogEntry.EnableCollectionChecks &&
                 (Application.isEditor || Debug.isDebugBuild);
             CollectionChecksEnabled = collectionChecksEnabled;
-            _objectPool = new ObjectPool<PooledEntity>(
-                CreateEntity,
-                null,
-                null,
-                DestroyEntity,
-                collectionChecksEnabled,
-                Math.Max(1, catalogEntry.InitialPrewarmCount),
-                catalogEntry.MaximumInactiveRetainedCount);
         }
 
         public bool CollectionChecksEnabled { get; }
@@ -72,33 +61,11 @@ namespace MonstersVsZombies.Core.Pooling
                 return false;
             }
 
-            _prewarmScratch.Clear();
             try
             {
-                int rentCount = _objectPool.CountInactive >= inactiveCount
-                    ? 0
-                    : inactiveCount;
-                for (int prewarmIndex = 0;
-                     prewarmIndex < rentCount;
-                     prewarmIndex++)
+                while (_inactiveEntities.Count < inactiveCount)
                 {
-                    PooledEntity entity = _objectPool.Get();
-                    if (entity == null)
-                    {
-                        failureReason = PoolFailureReason.CreationFailed;
-                        return false;
-                    }
-
-                    _prewarmScratch.Add(entity);
-                }
-
-                for (int entityIndex = _prewarmScratch.Count - 1;
-                     entityIndex >= 0;
-                     entityIndex--)
-                {
-                    PooledEntity entity = _prewarmScratch[entityIndex];
-                    _objectPool.Release(entity);
-                    _prewarmScratch.RemoveAt(entityIndex);
+                    _inactiveEntities.Push(CreateEntity());
                 }
 
                 failureReason = PoolFailureReason.None;
@@ -110,27 +77,6 @@ namespace MonstersVsZombies.Core.Pooling
                 _failedRentCount++;
                 failureReason = PoolFailureReason.CreationFailed;
                 return false;
-            }
-            finally
-            {
-                for (int entityIndex = _prewarmScratch.Count - 1;
-                     entityIndex >= 0;
-                     entityIndex--)
-                {
-                    PooledEntity entity = _prewarmScratch[entityIndex];
-                    if (entity != null && _objectPool.CountActive > 0)
-                    {
-                        try
-                        {
-                            _objectPool.Release(entity);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                        }
-                    }
-                }
-
-                _prewarmScratch.Clear();
             }
         }
 
@@ -149,7 +95,9 @@ namespace MonstersVsZombies.Core.Pooling
             PooledEntity entity;
             try
             {
-                entity = _objectPool.Get();
+                entity = _inactiveEntities.Count > 0
+                    ? _inactiveEntities.Pop()
+                    : CreateEntity();
             }
             catch (Exception exception)
             {
@@ -167,7 +115,7 @@ namespace MonstersVsZombies.Core.Pooling
                 {
                     entity.MarkReturning();
                     entity.gameObject.SetActive(false);
-                    _objectPool.Release(entity);
+                    StoreOrDestroy(entity);
                 }
 
                 return PoolRentResult<PooledEntity>.CreateFailure(
@@ -201,15 +149,7 @@ namespace MonstersVsZombies.Core.Pooling
             entity.MarkReturning();
             entity.PrepareForReturn();
             entity.gameObject.SetActive(false);
-            _isReleasingEntity = true;
-            try
-            {
-                _objectPool.Release(entity);
-            }
-            finally
-            {
-                _isReleasingEntity = false;
-            }
+            StoreOrDestroy(entity);
 
             return PoolReturnResult.CreateSuccess(PoolId);
         }
@@ -220,7 +160,7 @@ namespace MonstersVsZombies.Core.Pooling
                 PoolId,
                 _createdCount,
                 _activeEntities.Count,
-                _objectPool.CountInactive,
+                _inactiveEntities.Count,
                 _peakActiveCount,
                 _failedRentCount,
                 _capacityReachedCount,
@@ -265,7 +205,10 @@ namespace MonstersVsZombies.Core.Pooling
             }
 
             _activeEntities.Clear();
-            _objectPool.Clear();
+            while (_inactiveEntities.Count > 0)
+            {
+                DestroyEntity(_inactiveEntities.Pop());
+            }
         }
 
         private PooledEntity CreateEntity()
@@ -291,13 +234,21 @@ namespace MonstersVsZombies.Core.Pooling
             return pooledEntity;
         }
 
-        private void DestroyEntity(PooledEntity entity)
+        private void StoreOrDestroy(PooledEntity entity)
         {
-            if (_isReleasingEntity)
+            if (_inactiveEntities.Count <
+                _catalogEntry.MaximumInactiveRetainedCount)
             {
-                _overflowDestroyCount++;
+                _inactiveEntities.Push(entity);
+                return;
             }
 
+            _overflowDestroyCount++;
+            DestroyEntity(entity);
+        }
+
+        private static void DestroyEntity(PooledEntity entity)
+        {
             if (entity == null)
             {
                 return;

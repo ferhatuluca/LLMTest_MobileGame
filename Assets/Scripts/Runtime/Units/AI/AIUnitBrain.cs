@@ -75,18 +75,7 @@ namespace MonstersVsZombies.Units.AI
 
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocatedBefore = System.GC.GetAllocatedBytesForCurrentThread();
-#endif
-            using (SandboxPerformanceDiagnostics.AIMarker.Auto())
-            {
-                AdvanceDecision(Time.deltaTime);
-            }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            SandboxPerformanceDiagnostics.RecordAllocation(
-                SandboxPerformanceSubsystem.AI,
-                System.GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
-#endif
+            AdvanceDecision(Time.deltaTime);
         }
 
         private void OnDestroy()
